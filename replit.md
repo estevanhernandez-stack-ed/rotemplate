@@ -68,6 +68,10 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Dark mode UI overhaul**: Complete redesign with professional dark theme (#0E1117 background, #161B22 surfaces, #00BCD4 tint)
+- **Upload instructions**: Added "How to Upload to Roblox" guide accessible from both home screen and editor (modal with step-by-step instructions referencing Roblox Creator Hub workflow)
+- **R15 template coordinates fixed**: All region coordinates now match official Roblox R15 specifications
+- **Server-side compositing**: POST /api/composite-fill endpoint uses sharp to produce correct 585x559px PNGs with transparency
 - Added AI generation mode using OpenAI gpt-image-1 for natural language clothing design
 - Added freehand drawing mode with brush sizes and undo
 - Fixed PNG export to work on both web (download link) and mobile (photo library save)
