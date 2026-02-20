@@ -123,11 +123,11 @@ export default function TemplateCanvas({
               y={region.y}
               width={region.width}
               height={region.height}
-              fill={fillColor}
-              stroke={isSelected ? Colors.light.accent : "#555"}
+              fill={fillColor === "transparent" ? "#1A2030" : fillColor}
+              stroke={isSelected ? "#00BCD4" : "#2A3140"}
               strokeWidth={isSelected ? 3 : 1}
               strokeDasharray={fillColor === "transparent" ? "4,2" : "0"}
-              opacity={fillColor === "transparent" ? 0.6 : 1}
+              opacity={fillColor === "transparent" ? 0.7 : 1}
             />
           );
         })}
@@ -169,9 +169,11 @@ const styles = StyleSheet.create({
   container: {
     position: "relative",
     alignSelf: "center",
-    backgroundColor: "#2A2A3E",
+    backgroundColor: "#111822",
     borderRadius: 12,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: Colors.light.border,
   },
   touchTarget: {
     position: "absolute",

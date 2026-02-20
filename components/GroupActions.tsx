@@ -91,7 +91,7 @@ export default function GroupActions({
                 styles.groupColorDot,
                 {
                   backgroundColor:
-                    selectedColor === "transparent" ? "#ccc" : selectedColor,
+                    selectedColor === "transparent" ? Colors.light.textSecondary : selectedColor,
                 },
               ]}
             />
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 3,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.1)",
+    borderColor: "rgba(255,255,255,0.08)",
   },
   groupBtnText: {
     fontSize: 13,

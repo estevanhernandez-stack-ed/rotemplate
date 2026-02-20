@@ -53,12 +53,12 @@ export default function ColorPicker({
             styles.currentSwatch,
             {
               backgroundColor:
-                selectedColor === "transparent" ? "#2A2A3E" : selectedColor,
+                selectedColor === "transparent" ? Colors.light.surfaceSecondary : selectedColor,
             },
           ]}
         >
           {selectedColor === "transparent" && (
-            <Ionicons name="close" size={16} color="#888" />
+            <Ionicons name="close" size={16} color={Colors.light.textSecondary} />
           )}
         </View>
       </View>
@@ -67,7 +67,7 @@ export default function ColorPicker({
         <TextInput
           style={styles.hexInput}
           placeholder="#FF0000"
-          placeholderTextColor="#777"
+          placeholderTextColor="#555"
           value={customHex}
           onChangeText={setCustomHex}
           maxLength={7}
@@ -109,7 +109,6 @@ export default function ColorPicker({
                 styles.presetSwatch,
                 { backgroundColor: color },
                 isActive && styles.presetSwatchActive,
-                color === "#FFFFFF" && styles.whiteSwatch,
               ]}
               onPress={() => handlePresetPress(color)}
             >
@@ -221,14 +220,12 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
   },
   presetSwatchActive: {
     borderWidth: 2,
-    borderColor: Colors.light.tint,
+    borderColor: "#00BCD4",
     transform: [{ scale: 1.1 }],
-  },
-  whiteSwatch: {
-    borderWidth: 1,
-    borderColor: "#ddd",
   },
 });
