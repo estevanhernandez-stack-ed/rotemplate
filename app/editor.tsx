@@ -216,97 +216,64 @@ export default function EditorScreen() {
     }
   }, [aiPrompt, templateType]);
 
+  const downloadBase64 = useCallback(
+    async (base64: string) => {
+      if (Platform.OS === "web") {
+        const link = document.createElement("a");
+        link.href = `data:image/png;base64,${base64}`;
+        link.download = `roblox_${templateType}_template.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        Alert.alert(
+          "Downloaded!",
+          `Your ${templateType} template (${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT}px) has been downloaded.`
+        );
+      } else {
+        if (!mediaPermission?.granted) {
+          const perm = await requestMediaPermission();
+          if (!perm.granted) {
+            Alert.alert(
+              "Permission Required",
+              "Please grant photo library access to save templates."
+            );
+            return;
+          }
+        }
+        const fileUri = `${FileSystem.cacheDirectory}roblox_${templateType}_template.png`;
+        await FileSystem.writeAsStringAsync(fileUri, base64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        await MediaLibrary.saveToLibraryAsync(fileUri);
+        if (Platform.OS !== "web") {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+        Alert.alert(
+          "Saved!",
+          `Your ${templateType} template (${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT}px) has been saved.`
+        );
+      }
+    },
+    [mediaPermission, templateType]
+  );
+
   const handleExport = useCallback(async () => {
     try {
       setIsSaving(true);
 
       if (aiImageBase64) {
-        if (Platform.OS === "web") {
-          const link = document.createElement("a");
-          link.href = `data:image/png;base64,${aiImageBase64}`;
-          link.download = `roblox_${templateType}_template.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          Alert.alert("Downloaded!", "Your template PNG has been downloaded.");
-        } else {
-          if (!mediaPermission?.granted) {
-            const perm = await requestMediaPermission();
-            if (!perm.granted) {
-              Alert.alert(
-                "Permission Required",
-                "Please grant photo library access to save templates."
-              );
-              setIsSaving(false);
-              return;
-            }
-          }
-
-          const fileUri = `${FileSystem.cacheDirectory}roblox_${templateType}_template.png`;
-          await FileSystem.writeAsStringAsync(fileUri, aiImageBase64, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          await MediaLibrary.saveToLibraryAsync(fileUri);
-
-          if (Platform.OS !== "web") {
-            Haptics.notificationAsync(
-              Haptics.NotificationFeedbackType.Success
-            );
-          }
-          Alert.alert(
-            "Saved!",
-            `Your AI-generated ${templateType} template has been saved to your photo library.`
-          );
-        }
+        await downloadBase64(aiImageBase64);
       } else {
-        if (Platform.OS === "web") {
-          const uri = await captureRef(exportRef, {
-            format: "png",
-            quality: 1,
-            width: TEMPLATE_WIDTH,
-            height: TEMPLATE_HEIGHT,
-          });
-          const link = document.createElement("a");
-          link.href = uri;
-          link.download = `roblox_${templateType}_template.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          Alert.alert(
-            "Downloaded!",
-            `Your ${templateType} template PNG (${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT}px) has been downloaded.`
-          );
+        const res = await apiRequest("POST", "/api/composite-fill", {
+          colorMap,
+          strokes,
+          templateType,
+        });
+        const data = await res.json();
+        if (data.image) {
+          await downloadBase64(data.image);
         } else {
-          if (!mediaPermission?.granted) {
-            const perm = await requestMediaPermission();
-            if (!perm.granted) {
-              Alert.alert(
-                "Permission Required",
-                "Please grant photo library access to save templates."
-              );
-              setIsSaving(false);
-              return;
-            }
-          }
-
-          const uri = await captureRef(exportRef, {
-            format: "png",
-            quality: 1,
-            width: TEMPLATE_WIDTH,
-            height: TEMPLATE_HEIGHT,
-          });
-
-          await MediaLibrary.saveToLibraryAsync(uri);
-
-          if (Platform.OS !== "web") {
-            Haptics.notificationAsync(
-              Haptics.NotificationFeedbackType.Success
-            );
-          }
-          Alert.alert(
-            "Saved!",
-            `Your ${templateType} template (${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT}px) has been saved to your photo library.`
-          );
+          Alert.alert("Error", "Failed to generate template image.");
         }
       }
     } catch (err) {
@@ -315,7 +282,7 @@ export default function EditorScreen() {
     } finally {
       setIsSaving(false);
     }
-  }, [mediaPermission, templateType, aiImageBase64]);
+  }, [mediaPermission, templateType, aiImageBase64, colorMap, strokes, downloadBase64]);
 
   const filledCount = Object.values(colorMap).filter(
     (c) => c && c !== "transparent"
@@ -553,35 +520,40 @@ export default function EditorScreen() {
 
             {aiImageBase64 && (
               <View style={styles.aiPreviewContainer}>
-                <Text style={styles.aiPreviewLabel}>Generated Design</Text>
+                <Text style={styles.aiPreviewLabel}>
+                  Template Preview ({TEMPLATE_WIDTH}x{TEMPLATE_HEIGHT}px)
+                </Text>
                 <View style={styles.aiPreviewWrapper}>
                   {Platform.OS === "web" ? (
-                    <img
-                      src={`data:image/png;base64,${aiImageBase64}`}
-                      style={{
-                        width: "100%",
-                        height: "auto",
-                        aspectRatio: "1/1",
-                        borderRadius: 8,
-                      }}
-                      alt="Generated template"
-                    />
+                    <View style={styles.checkerboardBg}>
+                      <img
+                        src={`data:image/png;base64,${aiImageBase64}`}
+                        style={{
+                          width: "100%",
+                          height: "auto",
+                          aspectRatio: `${TEMPLATE_WIDTH}/${TEMPLATE_HEIGHT}`,
+                          borderRadius: 8,
+                          imageRendering: "pixelated" as any,
+                        }}
+                        alt="Generated template"
+                      />
+                    </View>
                   ) : (
                     <View style={styles.aiPreviewImage}>
                       <Text style={styles.aiPreviewNote}>
-                        Design generated! Tap the download button above to save it as a PNG for Roblox upload.
+                        Template ready! Tap the download button above to save the {TEMPLATE_WIDTH}x{TEMPLATE_HEIGHT}px PNG for Roblox upload.
                       </Text>
                     </View>
                   )}
                 </View>
                 <View style={styles.aiInfoRow}>
                   <Ionicons
-                    name="information-circle-outline"
+                    name="checkmark-circle"
                     size={16}
-                    color={Colors.light.textSecondary}
+                    color="#4CAF50"
                   />
                   <Text style={styles.aiInfoText}>
-                    Tap the download button in the header to save this design as a PNG ready for Roblox upload.
+                    Ready for Roblox! This is a properly formatted {TEMPLATE_WIDTH}x{TEMPLATE_HEIGHT}px template with transparent background.
                   </Text>
                 </View>
               </View>
@@ -912,6 +884,10 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     borderColor: Colors.light.border,
+  },
+  checkerboardBg: {
+    backgroundColor: "#D0D0D0",
+    padding: 8,
   },
   aiPreviewImage: {
     padding: 24,

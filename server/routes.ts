@@ -107,9 +107,15 @@ async function compositeToTemplate(
   return result.toString("base64");
 }
 
+interface StrokeData {
+  path: string;
+  color: string;
+  width: number;
+}
+
 async function compositeColorMap(
   colorMap: Record<string, string>,
-  strokesImageBase64: string | null,
+  strokes: StrokeData[],
   templateType: "shirt" | "pants"
 ): Promise<string> {
   const regions = templateType === "pants" ? PANTS_REGIONS : SHIRT_REGIONS;
@@ -122,20 +128,37 @@ async function compositeColorMap(
     })
     .join("\n");
 
+  const clipPathRects = regions
+    .map(
+      (r) =>
+        `<rect x="${r.x}" y="${r.y}" width="${r.width}" height="${r.height}"/>`
+    )
+    .join("\n");
+
+  const strokePaths = (strokes || [])
+    .map(
+      (s) =>
+        `<path d="${s.path}" stroke="${s.color}" stroke-width="${s.width}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`
+    )
+    .join("\n");
+
   const svg = `<svg width="${TEMPLATE_WIDTH}" height="${TEMPLATE_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <clipPath id="regionClip">
+    ${clipPathRects}
+  </clipPath>
+</defs>
 ${regionRects}
+<g clip-path="url(#regionClip)">
+  ${strokePaths}
+</g>
 </svg>`;
 
-  let base = sharp(Buffer.from(svg))
+  const result = await sharp(Buffer.from(svg))
     .resize(TEMPLATE_WIDTH, TEMPLATE_HEIGHT)
-    .png();
+    .png({ compressionLevel: 9 })
+    .toBuffer();
 
-  if (strokesImageBase64) {
-    const strokesBuffer = Buffer.from(strokesImageBase64, "base64");
-    base = base.composite([{ input: strokesBuffer, left: 0, top: 0 }]) as any;
-  }
-
-  const result = await (base as any).toBuffer();
   return result.toString("base64");
 }
 
@@ -184,12 +207,12 @@ IMPORTANT: This is a flat texture map, NOT a 3D rendering. Create a seamless, cl
     "/api/composite-fill",
     async (req: Request, res: Response) => {
       try {
-        const { colorMap, strokesImage, templateType } = req.body;
+        const { colorMap, strokes, templateType } = req.body;
         const type = templateType === "pants" ? "pants" : "shirt";
 
         const result = await compositeColorMap(
           colorMap || {},
-          strokesImage || null,
+          strokes || [],
           type
         );
 
