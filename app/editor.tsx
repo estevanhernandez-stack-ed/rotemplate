@@ -9,10 +9,13 @@ import {
   Platform,
   ActivityIndicator,
   TextInput,
+  Modal,
+  Linking,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import * as MediaLibrary from "expo-media-library";
 import { captureRef } from "react-native-view-shot";
@@ -58,6 +61,7 @@ export default function EditorScreen() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiImageBase64, setAiImageBase64] = useState<string | null>(null);
+  const [showUploadGuide, setShowUploadGuide] = useState(false);
 
   const [mediaPermission, requestMediaPermission] =
     MediaLibrary.usePermissions();
@@ -310,6 +314,16 @@ export default function EditorScreen() {
           </Text>
         </View>
         <Pressable
+          onPress={() => setShowUploadGuide(true)}
+          style={({ pressed }) => [
+            styles.headerIconBtn,
+            styles.infoBtn,
+            pressed && styles.btnPressed,
+          ]}
+        >
+          <Ionicons name="help-circle-outline" size={22} color={Colors.light.tint} />
+        </Pressable>
+        <Pressable
           onPress={handleExport}
           disabled={isSaving}
           style={({ pressed }) => [
@@ -329,60 +343,27 @@ export default function EditorScreen() {
 
       <View style={styles.modeBar}>
         <View style={styles.modeToggle}>
-          <Pressable
-            onPress={() => handleModeToggle("fill")}
-            style={[styles.modeBtn, mode === "fill" && styles.modeBtnActive]}
-          >
-            <Ionicons
-              name="color-fill"
-              size={16}
-              color={mode === "fill" ? "#fff" : Colors.light.textSecondary}
-            />
-            <Text
-              style={[
-                styles.modeBtnText,
-                mode === "fill" && styles.modeBtnTextActive,
-              ]}
-            >
-              Fill
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => handleModeToggle("draw")}
-            style={[styles.modeBtn, mode === "draw" && styles.modeBtnActive]}
-          >
-            <MaterialCommunityIcons
-              name="draw"
-              size={16}
-              color={mode === "draw" ? "#fff" : Colors.light.textSecondary}
-            />
-            <Text
-              style={[
-                styles.modeBtnText,
-                mode === "draw" && styles.modeBtnTextActive,
-              ]}
-            >
-              Draw
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => handleModeToggle("ai")}
-            style={[styles.modeBtn, mode === "ai" && styles.modeBtnActive]}
-          >
-            <Ionicons
-              name="sparkles"
-              size={16}
-              color={mode === "ai" ? "#fff" : Colors.light.textSecondary}
-            />
-            <Text
-              style={[
-                styles.modeBtnText,
-                mode === "ai" && styles.modeBtnTextActive,
-              ]}
-            >
-              AI
-            </Text>
-          </Pressable>
+          {(["fill", "draw", "ai"] as EditorMode[]).map((m) => {
+            const icons = { fill: "color-fill", draw: "brush", ai: "sparkles" } as const;
+            const labels = { fill: "Fill", draw: "Draw", ai: "AI" };
+            const isActive = mode === m;
+            return (
+              <Pressable
+                key={m}
+                onPress={() => handleModeToggle(m)}
+                style={[styles.modeBtn, isActive && styles.modeBtnActive]}
+              >
+                <Ionicons
+                  name={icons[m] as any}
+                  size={16}
+                  color={isActive ? "#fff" : Colors.light.textSecondary}
+                />
+                <Text style={[styles.modeBtnText, isActive && styles.modeBtnTextActive]}>
+                  {labels[m]}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         {mode === "draw" && (
@@ -410,9 +391,7 @@ export default function EditorScreen() {
                         height: Math.min(size + 4, 24),
                         borderRadius: Math.min(size + 4, 24) / 2,
                         backgroundColor:
-                          brushSize === size
-                            ? "#fff"
-                            : Colors.light.textSecondary,
+                          brushSize === size ? "#fff" : Colors.light.textSecondary,
                       },
                     ]}
                   />
@@ -431,11 +410,7 @@ export default function EditorScreen() {
               <Ionicons
                 name="arrow-undo"
                 size={20}
-                color={
-                  strokes.length === 0
-                    ? Colors.light.border
-                    : Colors.light.tint
-                }
+                color={strokes.length === 0 ? Colors.light.border : Colors.light.tint}
               />
             </Pressable>
           </View>
@@ -488,7 +463,7 @@ export default function EditorScreen() {
               <TextInput
                 style={styles.aiInput}
                 placeholder={`Describe your ${templateType} design...`}
-                placeholderTextColor="#888"
+                placeholderTextColor="#555"
                 value={aiPrompt}
                 onChangeText={setAiPrompt}
                 multiline
@@ -547,11 +522,7 @@ export default function EditorScreen() {
                   )}
                 </View>
                 <View style={styles.aiInfoRow}>
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={16}
-                    color="#4CAF50"
-                  />
+                  <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
                   <Text style={styles.aiInfoText}>
                     Ready for Roblox! This is a properly formatted {TEMPLATE_WIDTH}x{TEMPLATE_HEIGHT}px template with transparent background.
                   </Text>
@@ -604,11 +575,7 @@ export default function EditorScreen() {
         {mode === "draw" && (
           <View style={styles.toolsCard}>
             <View style={styles.drawHintRow}>
-              <Ionicons
-                name="finger-print"
-                size={20}
-                color={Colors.light.tint}
-              />
+              <Ionicons name="finger-print" size={20} color={Colors.light.tint} />
               <Text style={styles.drawHintText}>
                 Draw directly on the template above. Strokes are clipped to the
                 clothing regions. Use undo to remove the last stroke.
@@ -616,6 +583,18 @@ export default function EditorScreen() {
             </View>
           </View>
         )}
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.uploadGuideBtnInline,
+            pressed && styles.btnPressed,
+          ]}
+          onPress={() => setShowUploadGuide(true)}
+        >
+          <Ionicons name="cloud-upload-outline" size={18} color={Colors.light.tint} />
+          <Text style={styles.uploadGuideBtnInlineText}>How to upload to Roblox</Text>
+          <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
+        </Pressable>
       </ScrollView>
 
       <ExportCanvas
@@ -624,9 +603,208 @@ export default function EditorScreen() {
         colorMap={colorMap}
         strokes={strokes}
       />
+
+      <Modal
+        visible={showUploadGuide}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowUploadGuide(false)}
+      >
+        <UploadGuideModal onClose={() => setShowUploadGuide(false)} templateType={templateType} />
+      </Modal>
     </View>
   );
 }
+
+function UploadGuideModal({ onClose, templateType }: { onClose: () => void; templateType: TemplateType }) {
+  const insets = useSafeAreaInsets();
+  const topInset = Platform.OS === "web" ? 67 : insets.top;
+  const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
+
+  const steps = [
+    {
+      title: "Export Your Template",
+      desc: "Tap the download button to save your 585x559px PNG file.",
+      icon: "download-outline" as const,
+      color: "#00BCD4",
+    },
+    {
+      title: "Open Roblox Creator Hub",
+      desc: "Go to create.roblox.com and sign in.",
+      icon: "globe-outline" as const,
+      color: "#7C3AED",
+      link: "https://create.roblox.com",
+    },
+    {
+      title: "Go to Creations > Avatar Items > Classics",
+      desc: `Select "Classic ${templateType === "shirt" ? "Shirts" : "Pants"}" from the Classic Type dropdown.`,
+      icon: "navigate-outline" as const,
+      color: "#FF9800",
+    },
+    {
+      title: "Upload Asset",
+      desc: "Click \"Upload Asset\" and select your exported PNG file.",
+      icon: "cloud-upload-outline" as const,
+      color: "#4CAF50",
+    },
+    {
+      title: "Name, Describe & Submit",
+      desc: "Add a name and description, then click \"Upload (10 Robux)\" to submit. Your item will appear after moderation.",
+      icon: "checkmark-circle-outline" as const,
+      color: "#00BCD4",
+    },
+  ];
+
+  return (
+    <View style={[uploadStyles.container, { backgroundColor: Colors.light.background }]}>
+      <View style={[uploadStyles.header, { paddingTop: topInset + 8 }]}>
+        <Text style={uploadStyles.headerTitle}>Upload Guide</Text>
+        <Pressable
+          onPress={onClose}
+          style={({ pressed }) => [
+            uploadStyles.closeBtn,
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <Ionicons name="close" size={24} color={Colors.light.text} />
+        </Pressable>
+      </View>
+
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[uploadStyles.content, { paddingBottom: bottomInset + 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {steps.map((step, i) => (
+          <Pressable
+            key={i}
+            style={uploadStyles.stepCard}
+            onPress={step.link ? () => Linking.openURL(step.link!) : undefined}
+          >
+            <View style={[uploadStyles.stepIcon, { backgroundColor: step.color + "18" }]}>
+              <Text style={[uploadStyles.stepNum, { color: step.color }]}>{i + 1}</Text>
+            </View>
+            <View style={uploadStyles.stepContent}>
+              <Text style={uploadStyles.stepTitle}>{step.title}</Text>
+              <Text style={uploadStyles.stepDesc}>{step.desc}</Text>
+              {step.link && (
+                <View style={uploadStyles.linkRow}>
+                  <Ionicons name="open-outline" size={14} color="#00BCD4" />
+                  <Text style={uploadStyles.linkText}>Open Creator Hub</Text>
+                </View>
+              )}
+            </View>
+          </Pressable>
+        ))}
+
+        <View style={uploadStyles.tipsCard}>
+          <Text style={uploadStyles.tipsTitle}>Quick Tips</Text>
+          <View style={uploadStyles.tipRow}>
+            <Ionicons name="checkmark" size={16} color="#4CAF50" />
+            <Text style={uploadStyles.tipText}>Template is automatically sized to 585x559px</Text>
+          </View>
+          <View style={uploadStyles.tipRow}>
+            <Ionicons name="checkmark" size={16} color="#4CAF50" />
+            <Text style={uploadStyles.tipText}>PNG with transparency - ready for Roblox</Text>
+          </View>
+          <View style={uploadStyles.tipRow}>
+            <Ionicons name="checkmark" size={16} color="#4CAF50" />
+            <Text style={uploadStyles.tipText}>Uploading costs 10 Robux per item</Text>
+          </View>
+          <View style={uploadStyles.tipRow}>
+            <Ionicons name="warning" size={16} color="#FF9800" />
+            <Text style={uploadStyles.tipText}>Avoid copyrighted content or it may be rejected</Text>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+const uploadStyles = StyleSheet.create({
+  container: { flex: 1 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+    backgroundColor: Colors.light.surface,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontFamily: "Inter_700Bold",
+    color: Colors.light.text,
+  },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.light.surfaceSecondary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  content: { padding: 20, gap: 12 },
+  stepCard: {
+    flexDirection: "row",
+    gap: 14,
+    backgroundColor: Colors.light.surface,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  stepIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepNum: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+  },
+  stepContent: { flex: 1, gap: 4 },
+  stepTitle: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.text,
+  },
+  stepDesc: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.textSecondary,
+    lineHeight: 19,
+  },
+  linkRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 },
+  linkText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#00BCD4" },
+  tipsCard: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: 14,
+    padding: 16,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    marginTop: 4,
+  },
+  tipsTitle: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.text,
+    marginBottom: 2,
+  },
+  tipRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  tipText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.textSecondary,
+    lineHeight: 18,
+  },
+});
 
 function getPromptSuggestions(type: TemplateType): string[] {
   if (type === "shirt") {
@@ -663,7 +841,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
-    gap: 12,
+    gap: 8,
     backgroundColor: Colors.light.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,
@@ -676,6 +854,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   backBtn: {
+    backgroundColor: Colors.light.surfaceSecondary,
+  },
+  infoBtn: {
     backgroundColor: Colors.light.surfaceSecondary,
   },
   btnPressed: {
@@ -886,7 +1067,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.light.border,
   },
   checkerboardBg: {
-    backgroundColor: "#D0D0D0",
+    backgroundColor: "#1A2030",
     padding: 8,
   },
   aiPreviewImage: {
@@ -939,6 +1120,23 @@ const styles = StyleSheet.create({
   suggestionText: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
+    color: Colors.light.text,
+  },
+  uploadGuideBtnInline: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: Colors.light.surface,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  uploadGuideBtnInlineText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
     color: Colors.light.text,
   },
 });
