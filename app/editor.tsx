@@ -239,40 +239,31 @@ export default function EditorScreen() {
           encoding: LegacyFileSystem.EncodingType.Base64,
         });
 
-        let saved = false;
-        if (!mediaPermission?.granted) {
-          const perm = await requestMediaPermission();
-          if (perm.granted) {
-            await MediaLibrary.saveToLibraryAsync(fileUri);
-            saved = true;
-          }
-        } else {
-          await MediaLibrary.saveToLibraryAsync(fileUri);
-          saved = true;
-        }
-
-        if (!saved) {
-          const sharingAvailable = await Sharing.isAvailableAsync();
-          if (sharingAvailable) {
-            await Sharing.shareAsync(fileUri, {
-              mimeType: "image/png",
-              dialogTitle: "Save your Roblox template",
-            });
-            saved = true;
-          }
-        }
-
-        if (saved) {
+        const sharingAvailable = await Sharing.isAvailableAsync();
+        if (sharingAvailable) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: "image/png",
+            dialogTitle: "Save your Roblox template",
+          });
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          Alert.alert(
-            "Saved!",
-            `Your ${templateType} template (${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT}px) has been saved.`
-          );
         } else {
-          Alert.alert(
-            "Could Not Save",
-            "Please grant photo library permission or use the share option to save your template."
-          );
+          try {
+            if (!mediaPermission?.granted) {
+              const perm = await requestMediaPermission();
+              if (!perm.granted) {
+                Alert.alert("Permission Required", "Please grant photo library access to save templates.");
+                return;
+              }
+            }
+            await MediaLibrary.saveToLibraryAsync(fileUri);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            Alert.alert(
+              "Saved!",
+              `Your ${templateType} template (${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT}px) has been saved to your photo library.`
+            );
+          } catch (saveErr) {
+            Alert.alert("Could Not Save", "Unable to save to photo library. Please try using the share option.");
+          }
         }
       }
     },
