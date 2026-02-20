@@ -1,11 +1,143 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import OpenAI from "openai";
+import sharp from "sharp";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
+
+const TEMPLATE_WIDTH = 585;
+const TEMPLATE_HEIGHT = 559;
+
+interface Region {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+const SHIRT_REGIONS: Region[] = [
+  { id: "torso_up", x: 168, y: 0, width: 128, height: 8 },
+  { id: "torso_right", x: 160, y: 8, width: 8, height: 128 },
+  { id: "torso_front", x: 168, y: 8, width: 128, height: 128 },
+  { id: "torso_left", x: 296, y: 8, width: 8, height: 128 },
+  { id: "torso_back", x: 304, y: 8, width: 128, height: 128 },
+  { id: "torso_down", x: 168, y: 136, width: 128, height: 8 },
+  { id: "rarm_up", x: 48, y: 264, width: 64, height: 8 },
+  { id: "rarm_left", x: 0, y: 272, width: 48, height: 128 },
+  { id: "rarm_back", x: 48, y: 272, width: 64, height: 128 },
+  { id: "rarm_right", x: 112, y: 272, width: 48, height: 128 },
+  { id: "rarm_front", x: 160, y: 272, width: 64, height: 128 },
+  { id: "rarm_down", x: 48, y: 400, width: 64, height: 8 },
+  { id: "larm_up", x: 296, y: 264, width: 64, height: 8 },
+  { id: "larm_front", x: 296, y: 272, width: 64, height: 128 },
+  { id: "larm_left", x: 360, y: 272, width: 48, height: 128 },
+  { id: "larm_back", x: 408, y: 272, width: 64, height: 128 },
+  { id: "larm_right", x: 472, y: 272, width: 48, height: 128 },
+  { id: "larm_down", x: 296, y: 400, width: 64, height: 8 },
+];
+
+const PANTS_REGIONS: Region[] = [
+  { id: "torso_up", x: 168, y: 0, width: 128, height: 8 },
+  { id: "torso_right", x: 160, y: 8, width: 8, height: 128 },
+  { id: "torso_front", x: 168, y: 8, width: 128, height: 128 },
+  { id: "torso_left", x: 296, y: 8, width: 8, height: 128 },
+  { id: "torso_back", x: 304, y: 8, width: 128, height: 128 },
+  { id: "torso_down", x: 168, y: 136, width: 128, height: 8 },
+  { id: "rleg_up", x: 48, y: 264, width: 64, height: 8 },
+  { id: "rleg_left", x: 0, y: 272, width: 48, height: 128 },
+  { id: "rleg_back", x: 48, y: 272, width: 64, height: 128 },
+  { id: "rleg_right", x: 112, y: 272, width: 48, height: 128 },
+  { id: "rleg_front", x: 160, y: 272, width: 64, height: 128 },
+  { id: "rleg_down", x: 48, y: 400, width: 64, height: 8 },
+  { id: "lleg_up", x: 296, y: 264, width: 64, height: 8 },
+  { id: "lleg_front", x: 296, y: 272, width: 64, height: 128 },
+  { id: "lleg_left", x: 360, y: 272, width: 48, height: 128 },
+  { id: "lleg_back", x: 408, y: 272, width: 64, height: 128 },
+  { id: "lleg_right", x: 472, y: 272, width: 48, height: 128 },
+  { id: "lleg_down", x: 296, y: 400, width: 64, height: 8 },
+];
+
+async function compositeToTemplate(
+  imageBase64: string,
+  templateType: "shirt" | "pants"
+): Promise<string> {
+  const regions = templateType === "pants" ? PANTS_REGIONS : SHIRT_REGIONS;
+  const imageBuffer = Buffer.from(imageBase64, "base64");
+
+  const resizedBuffer = await sharp(imageBuffer)
+    .resize(TEMPLATE_WIDTH, TEMPLATE_HEIGHT, { fit: "cover", position: "center" })
+    .ensureAlpha()
+    .png()
+    .toBuffer();
+
+  const composites: sharp.OverlayOptions[] = [];
+  for (const region of regions) {
+    const regionImage = await sharp(resizedBuffer)
+      .extract({
+        left: region.x,
+        top: region.y,
+        width: region.width,
+        height: region.height,
+      })
+      .toBuffer();
+
+    composites.push({
+      input: regionImage,
+      left: region.x,
+      top: region.y,
+    });
+  }
+
+  const result = await sharp({
+    create: {
+      width: TEMPLATE_WIDTH,
+      height: TEMPLATE_HEIGHT,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
+    .composite(composites)
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+
+  return result.toString("base64");
+}
+
+async function compositeColorMap(
+  colorMap: Record<string, string>,
+  strokesImageBase64: string | null,
+  templateType: "shirt" | "pants"
+): Promise<string> {
+  const regions = templateType === "pants" ? PANTS_REGIONS : SHIRT_REGIONS;
+
+  const regionRects = regions
+    .filter((r) => colorMap[r.id] && colorMap[r.id] !== "transparent")
+    .map((r) => {
+      const color = colorMap[r.id];
+      return `<rect x="${r.x}" y="${r.y}" width="${r.width}" height="${r.height}" fill="${color}"/>`;
+    })
+    .join("\n");
+
+  const svg = `<svg width="${TEMPLATE_WIDTH}" height="${TEMPLATE_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
+${regionRects}
+</svg>`;
+
+  let base = sharp(Buffer.from(svg))
+    .resize(TEMPLATE_WIDTH, TEMPLATE_HEIGHT)
+    .png();
+
+  if (strokesImageBase64) {
+    const strokesBuffer = Buffer.from(strokesImageBase64, "base64");
+    base = base.composite([{ input: strokesBuffer, left: 0, top: 0 }]) as any;
+  }
+
+  const result = await (base as any).toBuffer();
+  return result.toString("base64");
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-template", async (req: Request, res: Response) => {
@@ -17,7 +149,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const type = templateType === "pants" ? "pants" : "shirt";
-      const limbLabel = type === "shirt" ? "arms (right arm and left arm)" : "legs (right leg and left leg)";
+      const limbLabel =
+        type === "shirt"
+          ? "arms (right arm and left arm)"
+          : "legs (right leg and left leg)";
 
       const fullPrompt = `Create a flat 2D texture/pattern design for a Roblox classic ${type} template. The design should be: ${prompt}. 
       
@@ -35,13 +170,36 @@ IMPORTANT: This is a flat texture map, NOT a 3D rendering. Create a seamless, cl
         return res.status(500).json({ error: "No image data returned" });
       }
 
-      res.json({ image: b64 });
+      const compositedImage = await compositeToTemplate(b64, type);
+
+      res.json({ image: compositedImage });
     } catch (error: any) {
       console.error("Error generating template:", error);
       const message = error?.message || "Failed to generate image";
       res.status(500).json({ error: message });
     }
   });
+
+  app.post(
+    "/api/composite-fill",
+    async (req: Request, res: Response) => {
+      try {
+        const { colorMap, strokesImage, templateType } = req.body;
+        const type = templateType === "pants" ? "pants" : "shirt";
+
+        const result = await compositeColorMap(
+          colorMap || {},
+          strokesImage || null,
+          type
+        );
+
+        res.json({ image: result });
+      } catch (error: any) {
+        console.error("Error compositing fill template:", error);
+        res.status(500).json({ error: error?.message || "Compositing failed" });
+      }
+    }
+  );
 
   const httpServer = createServer(app);
   return httpServer;
