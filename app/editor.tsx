@@ -11,23 +11,25 @@ import {
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as MediaLibrary from "expo-media-library";
 import { captureRef } from "react-native-view-shot";
-import * as FileSystem from "expo-file-system";
 import Colors from "@/constants/colors";
 import {
   SHIRT_REGIONS,
   PANTS_REGIONS,
   GROUP_LABELS,
   type TemplateType,
-  type BodyRegion,
 } from "@/constants/templates";
-import TemplateCanvas from "@/components/TemplateCanvas";
+import TemplateCanvas, { type Stroke } from "@/components/TemplateCanvas";
 import ColorPicker from "@/components/ColorPicker";
 import GroupActions from "@/components/GroupActions";
 import ExportCanvas from "@/components/ExportCanvas";
+
+type EditorMode = "fill" | "draw";
+
+const BRUSH_SIZES = [2, 5, 10, 18, 30];
 
 export default function EditorScreen() {
   const { type } = useLocalSearchParams<{ type: TemplateType }>();
@@ -41,6 +43,10 @@ export default function EditorScreen() {
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string>("#E94560");
   const [isSaving, setIsSaving] = useState(false);
+  const [mode, setMode] = useState<EditorMode>("fill");
+  const [strokes, setStrokes] = useState<Stroke[]>([]);
+  const [brushSize, setBrushSize] = useState(5);
+  const currentPathRef = useRef<string[]>([]);
   const exportRef = useRef<View>(null);
 
   const [mediaPermission, requestMediaPermission] =
@@ -68,11 +74,11 @@ export default function EditorScreen() {
   const handleColorSelect = useCallback(
     (color: string) => {
       setSelectedColor(color);
-      if (selectedRegion) {
+      if (selectedRegion && mode === "fill") {
         setColorMap((prev) => ({ ...prev, [selectedRegion]: color }));
       }
     },
-    [selectedRegion]
+    [selectedRegion, mode]
   );
 
   const handleFillGroup = useCallback(
@@ -105,8 +111,68 @@ export default function EditorScreen() {
 
   const handleClearAll = useCallback(() => {
     setColorMap({});
+    setStrokes([]);
     setSelectedRegion(null);
   }, []);
+
+  const handleStrokeStart = useCallback(() => {
+    currentPathRef.current = [];
+  }, []);
+
+  const handleStrokeMove = useCallback((x: number, y: number) => {
+    const pts = currentPathRef.current;
+    if (pts.length === 0) {
+      pts.push(`M ${x.toFixed(1)} ${y.toFixed(1)}`);
+    } else {
+      pts.push(`L ${x.toFixed(1)} ${y.toFixed(1)}`);
+    }
+    const pathStr = pts.join(" ");
+    setStrokes((prev) => {
+      const existing = [...prev];
+      if (
+        existing.length > 0 &&
+        existing[existing.length - 1].path.startsWith(pts[0])
+      ) {
+        existing[existing.length - 1] = {
+          ...existing[existing.length - 1],
+          path: pathStr,
+        };
+      } else {
+        existing.push({
+          path: pathStr,
+          color: selectedColor === "transparent" ? "#000000" : selectedColor,
+          width: brushSize,
+        });
+      }
+      return existing;
+    });
+  }, [selectedColor, brushSize]);
+
+  const handleStrokeEnd = useCallback(() => {
+    currentPathRef.current = [];
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    if (mode === "draw") {
+      setStrokes((prev) => prev.slice(0, -1));
+    }
+  }, [mode]);
+
+  const handleModeToggle = useCallback(
+    (newMode: EditorMode) => {
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+      setMode(newMode);
+      if (newMode === "draw") {
+        setSelectedRegion(null);
+      }
+    },
+    []
+  );
 
   const handleExport = useCallback(async () => {
     if (Platform.OS === "web") {
@@ -164,6 +230,7 @@ export default function EditorScreen() {
         <Pressable
           onPress={() => router.back()}
           style={({ pressed }) => [
+            styles.headerIconBtn,
             styles.backBtn,
             pressed && styles.btnPressed,
           ]}
@@ -175,13 +242,14 @@ export default function EditorScreen() {
             {templateType === "shirt" ? "Shirt" : "Pants"} Editor
           </Text>
           <Text style={styles.headerSubtitle}>
-            {filledCount}/{regions.length} regions filled
+            {filledCount} filled {"\u00B7"} {strokes.length} strokes
           </Text>
         </View>
         <Pressable
           onPress={handleExport}
           disabled={isSaving}
           style={({ pressed }) => [
+            styles.headerIconBtn,
             styles.exportBtn,
             pressed && styles.btnPressed,
             isSaving && styles.disabledBtn,
@@ -195,6 +263,109 @@ export default function EditorScreen() {
         </Pressable>
       </View>
 
+      <View style={styles.modeBar}>
+        <View style={styles.modeToggle}>
+          <Pressable
+            onPress={() => handleModeToggle("fill")}
+            style={[
+              styles.modeBtn,
+              mode === "fill" && styles.modeBtnActive,
+            ]}
+          >
+            <Ionicons
+              name="color-fill"
+              size={18}
+              color={mode === "fill" ? "#fff" : Colors.light.textSecondary}
+            />
+            <Text
+              style={[
+                styles.modeBtnText,
+                mode === "fill" && styles.modeBtnTextActive,
+              ]}
+            >
+              Fill
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => handleModeToggle("draw")}
+            style={[
+              styles.modeBtn,
+              mode === "draw" && styles.modeBtnActive,
+            ]}
+          >
+            <MaterialCommunityIcons
+              name="draw"
+              size={18}
+              color={mode === "draw" ? "#fff" : Colors.light.textSecondary}
+            />
+            <Text
+              style={[
+                styles.modeBtnText,
+                mode === "draw" && styles.modeBtnTextActive,
+              ]}
+            >
+              Draw
+            </Text>
+          </Pressable>
+        </View>
+
+        {mode === "draw" && (
+          <View style={styles.drawTools}>
+            <View style={styles.brushRow}>
+              {BRUSH_SIZES.map((size) => (
+                <Pressable
+                  key={size}
+                  onPress={() => {
+                    setBrushSize(size);
+                    if (Platform.OS !== "web") {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }
+                  }}
+                  style={[
+                    styles.brushBtn,
+                    brushSize === size && styles.brushBtnActive,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.brushDot,
+                      {
+                        width: Math.min(size + 4, 24),
+                        height: Math.min(size + 4, 24),
+                        borderRadius: Math.min(size + 4, 24) / 2,
+                        backgroundColor:
+                          brushSize === size
+                            ? "#fff"
+                            : Colors.light.textSecondary,
+                      },
+                    ]}
+                  />
+                </Pressable>
+              ))}
+            </View>
+            <Pressable
+              onPress={handleUndo}
+              disabled={strokes.length === 0}
+              style={({ pressed }) => [
+                styles.undoBtn,
+                pressed && styles.btnPressed,
+                strokes.length === 0 && styles.disabledBtn,
+              ]}
+            >
+              <Ionicons
+                name="arrow-undo"
+                size={20}
+                color={
+                  strokes.length === 0
+                    ? Colors.light.border
+                    : Colors.light.tint
+                }
+              />
+            </Pressable>
+          </View>
+        )}
+      </View>
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[
@@ -202,17 +373,15 @@ export default function EditorScreen() {
           { paddingBottom: bottomInset + 20 },
         ]}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={mode !== "draw"}
       >
-        {selectedRegionInfo && (
+        {mode === "fill" && selectedRegionInfo && (
           <View style={styles.selectionBanner}>
             <View style={styles.selectionInfo}>
-              <Ionicons
-                name="locate"
-                size={16}
-                color={Colors.light.tint}
-              />
+              <Ionicons name="locate" size={16} color={Colors.light.tint} />
               <Text style={styles.selectionText}>
-                {GROUP_LABELS[selectedRegionInfo.group] || selectedRegionInfo.group}
+                {GROUP_LABELS[selectedRegionInfo.group] ||
+                  selectedRegionInfo.group}
                 {" \u00B7 "}
                 {selectedRegionInfo.label}
               </Text>
@@ -226,6 +395,13 @@ export default function EditorScreen() {
           colorMap={colorMap}
           selectedRegion={selectedRegion}
           onRegionPress={handleRegionPress}
+          mode={mode}
+          strokes={strokes}
+          drawColor={selectedColor}
+          brushSize={brushSize}
+          onStrokeStart={handleStrokeStart}
+          onStrokeMove={handleStrokeMove}
+          onStrokeEnd={handleStrokeEnd}
         />
 
         <View style={styles.toolsCard}>
@@ -235,22 +411,41 @@ export default function EditorScreen() {
           />
         </View>
 
-        <View style={styles.toolsCard}>
-          <GroupActions
-            regions={regions}
-            selectedColor={selectedColor}
-            templateType={templateType}
-            onFillGroup={handleFillGroup}
-            onFillAll={handleFillAll}
-            onClearAll={handleClearAll}
-          />
-        </View>
+        {mode === "fill" && (
+          <View style={styles.toolsCard}>
+            <GroupActions
+              regions={regions}
+              selectedColor={selectedColor}
+              templateType={templateType}
+              onFillGroup={handleFillGroup}
+              onFillAll={handleFillAll}
+              onClearAll={handleClearAll}
+            />
+          </View>
+        )}
+
+        {mode === "draw" && (
+          <View style={styles.toolsCard}>
+            <View style={styles.drawHintRow}>
+              <Ionicons
+                name="finger-print"
+                size={20}
+                color={Colors.light.tint}
+              />
+              <Text style={styles.drawHintText}>
+                Draw directly on the template above. Strokes are clipped to the
+                clothing regions. Use undo to remove the last stroke.
+              </Text>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       <ExportCanvas
         ref={exportRef}
         regions={regions}
         colorMap={colorMap}
+        strokes={strokes}
       />
     </View>
   );
@@ -265,18 +460,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     gap: 12,
     backgroundColor: Colors.light.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,
   },
-  backBtn: {
+  headerIconBtn: {
     width: 40,
     height: 40,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+  },
+  backBtn: {
     backgroundColor: Colors.light.surfaceSecondary,
   },
   btnPressed: {
@@ -298,15 +495,84 @@ const styles = StyleSheet.create({
     color: Colors.light.textSecondary,
   },
   exportBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
     backgroundColor: Colors.light.tint,
   },
   disabledBtn: {
-    opacity: 0.5,
+    opacity: 0.4,
+  },
+  modeBar: {
+    backgroundColor: Colors.light.surface,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    gap: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  modeToggle: {
+    flexDirection: "row",
+    backgroundColor: Colors.light.surfaceSecondary,
+    borderRadius: 10,
+    padding: 3,
+  },
+  modeBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  modeBtnActive: {
+    backgroundColor: Colors.light.tint,
+    shadowColor: Colors.light.tint,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modeBtnText: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.textSecondary,
+  },
+  modeBtnTextActive: {
+    color: "#fff",
+  },
+  drawTools: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  brushRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  brushBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.light.surfaceSecondary,
+  },
+  brushBtnActive: {
+    backgroundColor: Colors.light.tint,
+  },
+  brushDot: {
+    backgroundColor: Colors.light.textSecondary,
+  },
+  undoBtn: {
+    width: 40,
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.light.surfaceSecondary,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
   },
   scroll: {
     flex: 1,
@@ -347,5 +613,17 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: Colors.light.border,
+  },
+  drawHintRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  drawHintText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.textSecondary,
+    lineHeight: 20,
   },
 });
