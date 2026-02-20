@@ -19,7 +19,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import * as MediaLibrary from "expo-media-library";
 import { captureRef } from "react-native-view-shot";
-import * as FileSystem from "expo-file-system";
+import * as LegacyFileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import Colors from "@/constants/colors";
 import {
@@ -234,28 +234,46 @@ export default function EditorScreen() {
           `Your ${templateType} template (${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT}px) has been downloaded.`
         );
       } else {
+        const fileUri = `${LegacyFileSystem.cacheDirectory}roblox_${templateType}_template.png`;
+        await LegacyFileSystem.writeAsStringAsync(fileUri, base64, {
+          encoding: LegacyFileSystem.EncodingType.Base64,
+        });
+
+        let saved = false;
         if (!mediaPermission?.granted) {
           const perm = await requestMediaPermission();
-          if (!perm.granted) {
-            Alert.alert(
-              "Permission Required",
-              "Please grant photo library access to save templates."
-            );
-            return;
+          if (perm.granted) {
+            await MediaLibrary.saveToLibraryAsync(fileUri);
+            saved = true;
+          }
+        } else {
+          await MediaLibrary.saveToLibraryAsync(fileUri);
+          saved = true;
+        }
+
+        if (!saved) {
+          const sharingAvailable = await Sharing.isAvailableAsync();
+          if (sharingAvailable) {
+            await Sharing.shareAsync(fileUri, {
+              mimeType: "image/png",
+              dialogTitle: "Save your Roblox template",
+            });
+            saved = true;
           }
         }
-        const fileUri = `${FileSystem.cacheDirectory}roblox_${templateType}_template.png`;
-        await FileSystem.writeAsStringAsync(fileUri, base64, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        await MediaLibrary.saveToLibraryAsync(fileUri);
-        if (Platform.OS !== "web") {
+
+        if (saved) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          Alert.alert(
+            "Saved!",
+            `Your ${templateType} template (${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT}px) has been saved.`
+          );
+        } else {
+          Alert.alert(
+            "Could Not Save",
+            "Please grant photo library permission or use the share option to save your template."
+          );
         }
-        Alert.alert(
-          "Saved!",
-          `Your ${templateType} template (${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT}px) has been saved.`
-        );
       }
     },
     [mediaPermission, templateType]
