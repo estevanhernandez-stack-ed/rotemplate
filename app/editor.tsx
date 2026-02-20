@@ -298,9 +298,10 @@ export default function EditorScreen() {
           Alert.alert("Error", "Failed to generate template image.");
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Export error:", err);
-      Alert.alert("Error", "Failed to save the template. Please try again.");
+      const msg = err?.message || String(err);
+      Alert.alert("Export Error", msg);
     } finally {
       setIsSaving(false);
     }
