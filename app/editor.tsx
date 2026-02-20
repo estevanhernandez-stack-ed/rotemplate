@@ -8,26 +8,32 @@ import {
   Alert,
   Platform,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as MediaLibrary from "expo-media-library";
 import { captureRef } from "react-native-view-shot";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import Colors from "@/constants/colors";
 import {
   SHIRT_REGIONS,
   PANTS_REGIONS,
   GROUP_LABELS,
+  TEMPLATE_WIDTH,
+  TEMPLATE_HEIGHT,
   type TemplateType,
 } from "@/constants/templates";
 import TemplateCanvas, { type Stroke } from "@/components/TemplateCanvas";
 import ColorPicker from "@/components/ColorPicker";
 import GroupActions from "@/components/GroupActions";
 import ExportCanvas from "@/components/ExportCanvas";
+import { apiRequest } from "@/lib/query-client";
 
-type EditorMode = "fill" | "draw";
+type EditorMode = "fill" | "draw" | "ai";
 
 const BRUSH_SIZES = [2, 5, 10, 18, 30];
 
@@ -48,6 +54,10 @@ export default function EditorScreen() {
   const [brushSize, setBrushSize] = useState(5);
   const currentPathRef = useRef<string[]>([]);
   const exportRef = useRef<View>(null);
+
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiImageBase64, setAiImageBase64] = useState<string | null>(null);
 
   const [mediaPermission, requestMediaPermission] =
     MediaLibrary.usePermissions();
@@ -113,40 +123,44 @@ export default function EditorScreen() {
     setColorMap({});
     setStrokes([]);
     setSelectedRegion(null);
+    setAiImageBase64(null);
   }, []);
 
   const handleStrokeStart = useCallback(() => {
     currentPathRef.current = [];
   }, []);
 
-  const handleStrokeMove = useCallback((x: number, y: number) => {
-    const pts = currentPathRef.current;
-    if (pts.length === 0) {
-      pts.push(`M ${x.toFixed(1)} ${y.toFixed(1)}`);
-    } else {
-      pts.push(`L ${x.toFixed(1)} ${y.toFixed(1)}`);
-    }
-    const pathStr = pts.join(" ");
-    setStrokes((prev) => {
-      const existing = [...prev];
-      if (
-        existing.length > 0 &&
-        existing[existing.length - 1].path.startsWith(pts[0])
-      ) {
-        existing[existing.length - 1] = {
-          ...existing[existing.length - 1],
-          path: pathStr,
-        };
+  const handleStrokeMove = useCallback(
+    (x: number, y: number) => {
+      const pts = currentPathRef.current;
+      if (pts.length === 0) {
+        pts.push(`M ${x.toFixed(1)} ${y.toFixed(1)}`);
       } else {
-        existing.push({
-          path: pathStr,
-          color: selectedColor === "transparent" ? "#000000" : selectedColor,
-          width: brushSize,
-        });
+        pts.push(`L ${x.toFixed(1)} ${y.toFixed(1)}`);
       }
-      return existing;
-    });
-  }, [selectedColor, brushSize]);
+      const pathStr = pts.join(" ");
+      setStrokes((prev) => {
+        const existing = [...prev];
+        if (
+          existing.length > 0 &&
+          existing[existing.length - 1].path.startsWith(pts[0])
+        ) {
+          existing[existing.length - 1] = {
+            ...existing[existing.length - 1],
+            path: pathStr,
+          };
+        } else {
+          existing.push({
+            path: pathStr,
+            color: selectedColor === "transparent" ? "#000000" : selectedColor,
+            width: brushSize,
+          });
+        }
+        return existing;
+      });
+    },
+    [selectedColor, brushSize]
+  );
 
   const handleStrokeEnd = useCallback(() => {
     currentPathRef.current = [];
@@ -161,64 +175,147 @@ export default function EditorScreen() {
     }
   }, [mode]);
 
-  const handleModeToggle = useCallback(
-    (newMode: EditorMode) => {
+  const handleModeToggle = useCallback((newMode: EditorMode) => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    setMode(newMode);
+    if (newMode === "draw") {
+      setSelectedRegion(null);
+    }
+  }, []);
+
+  const handleAiGenerate = useCallback(async () => {
+    if (!aiPrompt.trim()) return;
+
+    try {
+      setAiLoading(true);
       if (Platform.OS !== "web") {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
-      setMode(newMode);
-      if (newMode === "draw") {
-        setSelectedRegion(null);
+
+      const res = await apiRequest("POST", "/api/generate-template", {
+        prompt: aiPrompt.trim(),
+        templateType,
+      });
+      const data = await res.json();
+
+      if (data.image) {
+        setAiImageBase64(data.image);
+        if (Platform.OS !== "web") {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      } else {
+        Alert.alert("Error", data.error || "Failed to generate image");
       }
-    },
-    []
-  );
+    } catch (err: any) {
+      console.error("AI generation error:", err);
+      Alert.alert("Error", "Failed to generate design. Please try again.");
+    } finally {
+      setAiLoading(false);
+    }
+  }, [aiPrompt, templateType]);
 
   const handleExport = useCallback(async () => {
-    if (Platform.OS === "web") {
-      Alert.alert("Export", "Export is only available on mobile devices.");
-      return;
-    }
-
     try {
       setIsSaving(true);
 
-      if (!mediaPermission?.granted) {
-        const perm = await requestMediaPermission();
-        if (!perm.granted) {
+      if (aiImageBase64) {
+        if (Platform.OS === "web") {
+          const link = document.createElement("a");
+          link.href = `data:image/png;base64,${aiImageBase64}`;
+          link.download = `roblox_${templateType}_template.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          Alert.alert("Downloaded!", "Your template PNG has been downloaded.");
+        } else {
+          if (!mediaPermission?.granted) {
+            const perm = await requestMediaPermission();
+            if (!perm.granted) {
+              Alert.alert(
+                "Permission Required",
+                "Please grant photo library access to save templates."
+              );
+              setIsSaving(false);
+              return;
+            }
+          }
+
+          const fileUri = `${FileSystem.cacheDirectory}roblox_${templateType}_template.png`;
+          await FileSystem.writeAsStringAsync(fileUri, aiImageBase64, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          await MediaLibrary.saveToLibraryAsync(fileUri);
+
+          if (Platform.OS !== "web") {
+            Haptics.notificationAsync(
+              Haptics.NotificationFeedbackType.Success
+            );
+          }
           Alert.alert(
-            "Permission Required",
-            "Please grant photo library access to save templates."
+            "Saved!",
+            `Your AI-generated ${templateType} template has been saved to your photo library.`
           );
-          setIsSaving(false);
-          return;
+        }
+      } else {
+        if (Platform.OS === "web") {
+          const uri = await captureRef(exportRef, {
+            format: "png",
+            quality: 1,
+            width: TEMPLATE_WIDTH,
+            height: TEMPLATE_HEIGHT,
+          });
+          const link = document.createElement("a");
+          link.href = uri;
+          link.download = `roblox_${templateType}_template.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          Alert.alert(
+            "Downloaded!",
+            `Your ${templateType} template PNG (${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT}px) has been downloaded.`
+          );
+        } else {
+          if (!mediaPermission?.granted) {
+            const perm = await requestMediaPermission();
+            if (!perm.granted) {
+              Alert.alert(
+                "Permission Required",
+                "Please grant photo library access to save templates."
+              );
+              setIsSaving(false);
+              return;
+            }
+          }
+
+          const uri = await captureRef(exportRef, {
+            format: "png",
+            quality: 1,
+            width: TEMPLATE_WIDTH,
+            height: TEMPLATE_HEIGHT,
+          });
+
+          await MediaLibrary.saveToLibraryAsync(uri);
+
+          if (Platform.OS !== "web") {
+            Haptics.notificationAsync(
+              Haptics.NotificationFeedbackType.Success
+            );
+          }
+          Alert.alert(
+            "Saved!",
+            `Your ${templateType} template (${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT}px) has been saved to your photo library.`
+          );
         }
       }
-
-      const uri = await captureRef(exportRef, {
-        format: "png",
-        quality: 1,
-        width: 585,
-        height: 559,
-      });
-
-      await MediaLibrary.saveToLibraryAsync(uri);
-
-      if (Platform.OS !== "web") {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-
-      Alert.alert(
-        "Saved!",
-        `Your ${templateType} template has been saved to your photo library at 585x559px.`
-      );
     } catch (err) {
       console.error("Export error:", err);
       Alert.alert("Error", "Failed to save the template. Please try again.");
     } finally {
       setIsSaving(false);
     }
-  }, [mediaPermission, templateType]);
+  }, [mediaPermission, templateType, aiImageBase64]);
 
   const filledCount = Object.values(colorMap).filter(
     (c) => c && c !== "transparent"
@@ -242,7 +339,7 @@ export default function EditorScreen() {
             {templateType === "shirt" ? "Shirt" : "Pants"} Editor
           </Text>
           <Text style={styles.headerSubtitle}>
-            {filledCount} filled {"\u00B7"} {strokes.length} strokes
+            {TEMPLATE_WIDTH}x{TEMPLATE_HEIGHT}px
           </Text>
         </View>
         <Pressable
@@ -267,14 +364,11 @@ export default function EditorScreen() {
         <View style={styles.modeToggle}>
           <Pressable
             onPress={() => handleModeToggle("fill")}
-            style={[
-              styles.modeBtn,
-              mode === "fill" && styles.modeBtnActive,
-            ]}
+            style={[styles.modeBtn, mode === "fill" && styles.modeBtnActive]}
           >
             <Ionicons
               name="color-fill"
-              size={18}
+              size={16}
               color={mode === "fill" ? "#fff" : Colors.light.textSecondary}
             />
             <Text
@@ -288,14 +382,11 @@ export default function EditorScreen() {
           </Pressable>
           <Pressable
             onPress={() => handleModeToggle("draw")}
-            style={[
-              styles.modeBtn,
-              mode === "draw" && styles.modeBtnActive,
-            ]}
+            style={[styles.modeBtn, mode === "draw" && styles.modeBtnActive]}
           >
             <MaterialCommunityIcons
               name="draw"
-              size={18}
+              size={16}
               color={mode === "draw" ? "#fff" : Colors.light.textSecondary}
             />
             <Text
@@ -305,6 +396,24 @@ export default function EditorScreen() {
               ]}
             >
               Draw
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => handleModeToggle("ai")}
+            style={[styles.modeBtn, mode === "ai" && styles.modeBtnActive]}
+          >
+            <Ionicons
+              name="sparkles"
+              size={16}
+              color={mode === "ai" ? "#fff" : Colors.light.textSecondary}
+            />
+            <Text
+              style={[
+                styles.modeBtnText,
+                mode === "ai" && styles.modeBtnTextActive,
+              ]}
+            >
+              AI
             </Text>
           </Pressable>
         </View>
@@ -390,26 +499,122 @@ export default function EditorScreen() {
           </View>
         )}
 
-        <TemplateCanvas
-          regions={regions}
-          colorMap={colorMap}
-          selectedRegion={selectedRegion}
-          onRegionPress={handleRegionPress}
-          mode={mode}
-          strokes={strokes}
-          drawColor={selectedColor}
-          brushSize={brushSize}
-          onStrokeStart={handleStrokeStart}
-          onStrokeMove={handleStrokeMove}
-          onStrokeEnd={handleStrokeEnd}
-        />
-
-        <View style={styles.toolsCard}>
-          <ColorPicker
-            selectedColor={selectedColor}
-            onColorSelect={handleColorSelect}
+        {mode !== "ai" && (
+          <TemplateCanvas
+            regions={regions}
+            colorMap={colorMap}
+            selectedRegion={selectedRegion}
+            onRegionPress={handleRegionPress}
+            mode={mode === "fill" ? "fill" : "draw"}
+            strokes={strokes}
+            drawColor={selectedColor}
+            brushSize={brushSize}
+            onStrokeStart={handleStrokeStart}
+            onStrokeMove={handleStrokeMove}
+            onStrokeEnd={handleStrokeEnd}
           />
-        </View>
+        )}
+
+        {mode === "ai" && (
+          <View style={styles.aiSection}>
+            <View style={styles.aiInputRow}>
+              <TextInput
+                style={styles.aiInput}
+                placeholder={`Describe your ${templateType} design...`}
+                placeholderTextColor="#888"
+                value={aiPrompt}
+                onChangeText={setAiPrompt}
+                multiline
+                maxLength={500}
+                editable={!aiLoading}
+              />
+            </View>
+            <Pressable
+              onPress={handleAiGenerate}
+              disabled={aiLoading || !aiPrompt.trim()}
+              style={({ pressed }) => [
+                styles.aiGenerateBtn,
+                pressed && styles.btnPressed,
+                (aiLoading || !aiPrompt.trim()) && styles.disabledBtn,
+              ]}
+            >
+              {aiLoading ? (
+                <View style={styles.aiLoadingRow}>
+                  <ActivityIndicator size="small" color="#fff" />
+                  <Text style={styles.aiGenerateBtnText}>Generating...</Text>
+                </View>
+              ) : (
+                <View style={styles.aiLoadingRow}>
+                  <Ionicons name="sparkles" size={18} color="#fff" />
+                  <Text style={styles.aiGenerateBtnText}>Generate Design</Text>
+                </View>
+              )}
+            </Pressable>
+
+            {aiImageBase64 && (
+              <View style={styles.aiPreviewContainer}>
+                <Text style={styles.aiPreviewLabel}>Generated Design</Text>
+                <View style={styles.aiPreviewWrapper}>
+                  {Platform.OS === "web" ? (
+                    <img
+                      src={`data:image/png;base64,${aiImageBase64}`}
+                      style={{
+                        width: "100%",
+                        height: "auto",
+                        aspectRatio: "1/1",
+                        borderRadius: 8,
+                      }}
+                      alt="Generated template"
+                    />
+                  ) : (
+                    <View style={styles.aiPreviewImage}>
+                      <Text style={styles.aiPreviewNote}>
+                        Design generated! Tap the download button above to save it as a PNG for Roblox upload.
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.aiInfoRow}>
+                  <Ionicons
+                    name="information-circle-outline"
+                    size={16}
+                    color={Colors.light.textSecondary}
+                  />
+                  <Text style={styles.aiInfoText}>
+                    Tap the download button in the header to save this design as a PNG ready for Roblox upload.
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            <View style={styles.toolsCard}>
+              <Text style={styles.aiSuggestionsLabel}>Prompt Ideas</Text>
+              <View style={styles.aiSuggestions}>
+                {getPromptSuggestions(templateType).map((suggestion, i) => (
+                  <Pressable
+                    key={i}
+                    onPress={() => setAiPrompt(suggestion)}
+                    style={({ pressed }) => [
+                      styles.suggestionChip,
+                      pressed && styles.btnPressed,
+                    ]}
+                  >
+                    <Text style={styles.suggestionText}>{suggestion}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          </View>
+        )}
+
+        {(mode === "fill" || mode === "draw") && (
+          <View style={styles.toolsCard}>
+            <ColorPicker
+              selectedColor={selectedColor}
+              onColorSelect={handleColorSelect}
+            />
+          </View>
+        )}
 
         {mode === "fill" && (
           <View style={styles.toolsCard}>
@@ -449,6 +654,31 @@ export default function EditorScreen() {
       />
     </View>
   );
+}
+
+function getPromptSuggestions(type: TemplateType): string[] {
+  if (type === "shirt") {
+    return [
+      "Red and black flannel plaid pattern",
+      "Galaxy nebula space pattern with stars",
+      "Military camouflage green pattern",
+      "Blue tie-dye swirl pattern",
+      "Tuxedo with black jacket and white shirt",
+      "Hawaiian tropical flowers on blue",
+      "Gold and black luxury pattern",
+      "Neon cyberpunk circuit board design",
+    ];
+  }
+  return [
+    "Blue denim jeans with pockets",
+    "Black leather pants with buckles",
+    "Military cargo pants with camo pattern",
+    "Red and white sporty track pants",
+    "Dark purple galaxy sweatpants",
+    "Classic khaki chinos",
+    "Neon green racing pants with stripes",
+    "Ripped distressed jeans look",
+  ];
 }
 
 const styles = StyleSheet.create({
@@ -521,7 +751,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 8,
     borderRadius: 8,
-    gap: 6,
+    gap: 5,
   },
   modeBtnActive: {
     backgroundColor: Colors.light.tint,
@@ -532,7 +762,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   modeBtnText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Inter_600SemiBold",
     color: Colors.light.textSecondary,
   },
@@ -625,5 +855,114 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     color: Colors.light.textSecondary,
     lineHeight: 20,
+  },
+  aiSection: {
+    gap: 16,
+  },
+  aiInputRow: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    overflow: "hidden",
+  },
+  aiInput: {
+    padding: 16,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.text,
+    minHeight: 80,
+    textAlignVertical: "top",
+  },
+  aiGenerateBtn: {
+    backgroundColor: "#7C3AED",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  aiLoadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  aiGenerateBtnText: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    color: "#fff",
+  },
+  aiPreviewContainer: {
+    gap: 10,
+  },
+  aiPreviewLabel: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  aiPreviewWrapper: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: 14,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  aiPreviewImage: {
+    padding: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 120,
+  },
+  aiPreviewNote: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: Colors.light.tint,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  aiInfoRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    paddingHorizontal: 4,
+  },
+  aiInfoText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.textSecondary,
+    lineHeight: 18,
+  },
+  aiSuggestionsLabel: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  aiSuggestions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  suggestionChip: {
+    backgroundColor: Colors.light.surfaceSecondary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  suggestionText: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.text,
   },
 });
