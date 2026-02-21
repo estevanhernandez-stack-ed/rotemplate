@@ -162,6 +162,77 @@ ${regionRects}
   return result.toString("base64");
 }
 
+function buildTemplatePrompt(userPrompt: string, type: "shirt" | "pants"): string {
+  if (type === "shirt") {
+    return `Create a flat 2D unwrapped texture map for a Roblox R15 classic SHIRT template at exactly 585x559 pixels. The design is: ${userPrompt}
+
+This is an UNWRAPPED TEXTURE MAP — a flat image where different rectangular regions represent different faces of a blocky 3D character. The image has a TRANSPARENT background with colored regions placed at specific positions.
+
+EXACT LAYOUT — draw the design ONLY in these rectangular regions:
+
+TORSO (upper half of image):
+- TORSO TOP face: centered near top, a wide short rectangle (shows top of shoulders)
+- TORSO RIGHT side: left of center, a tall rectangle (right side of the torso as seen from front)
+- TORSO FRONT: center, a large square — THIS IS THE MAIN VISIBLE AREA. Draw the primary shirt design here (chest, buttons, logo, main pattern)
+- TORSO LEFT side: right of center, a tall rectangle (left side of torso)  
+- TORSO BACK: far right area, a large square same size as front — Draw the back of the shirt here (back pattern, number, etc.)
+- TORSO BOTTOM face: below center, a wide short rectangle (bottom hem of shirt)
+
+RIGHT ARM (bottom-left area):
+- Four tall rectangles side by side: Left face, Back face, Right face, Front face of the right arm
+- Small squares above and below the front face for arm top and bottom
+- Design should show a sleeve — consistent with the torso pattern
+
+LEFT ARM (bottom-right area):
+- Four tall rectangles side by side: Front face, Left face, Back face, Right face of the left arm
+- Small squares above and below the front face for arm top and bottom
+- Design should show a sleeve — mirror of the right arm
+
+CRITICAL RULES:
+- This is a FLAT TEXTURE MAP, not a 3D rendering
+- ALL regions must have the shirt design/pattern applied consistently
+- The FRONT and BACK torso squares are the most prominent — put the main design there
+- Arm regions should have matching sleeves
+- No 3D shading, no perspective, no shadows
+- Transparent/empty background outside the clothing regions
+- Make the design vivid, clean, and game-ready`;
+  }
+
+  return `Create a flat 2D unwrapped texture map for a Roblox R15 classic PANTS template at exactly 585x559 pixels. The design is: ${userPrompt}
+
+This is an UNWRAPPED TEXTURE MAP — a flat image where different rectangular regions represent different faces of a blocky 3D character's lower body. The image has a TRANSPARENT background with colored regions placed at specific positions.
+
+EXACT LAYOUT — draw the design ONLY in these rectangular regions:
+
+TORSO/WAIST (upper half of image):
+- TORSO TOP face: centered near top, a wide short rectangle (waistband top)
+- TORSO RIGHT side: left of center, a tall rectangle (right hip)
+- TORSO FRONT: center, a large square — THIS IS THE MAIN VISIBLE AREA. Draw the main pants front here (fly, belt, pockets, main pattern)
+- TORSO LEFT side: right of center, a tall rectangle (left hip)
+- TORSO BACK: far right area, a large square same size as front — Draw the back of the pants here (back pockets, pattern)
+- TORSO BOTTOM face: below center, a wide short rectangle (crotch/seat area)
+
+RIGHT LEG (bottom-left area):
+- Four tall rectangles side by side: Left face, Back face, Right face, Front face of the right leg
+- Small squares above and below the front face for leg top and bottom
+- Design should show a pant leg — consistent with the waist pattern, showing the leg portion of jeans/pants/etc.
+
+LEFT LEG (bottom-right area):
+- Four tall rectangles side by side: Front face, Left face, Back face, Right face of the left leg
+- Small squares above and below the front face for leg top and bottom
+- Design should show a pant leg — mirror of the right leg
+
+CRITICAL RULES:
+- This is a FLAT TEXTURE MAP, not a 3D rendering
+- ALL regions must have the pants design/pattern applied consistently
+- The FRONT and BACK torso squares are the most prominent — put the main waist/hip design there
+- Leg regions should show matching pant legs (jeans seams, fabric texture, etc.)
+- The waist/torso area connects visually to the leg areas
+- No 3D shading, no perspective, no shadows
+- Transparent/empty background outside the clothing regions
+- Make the design vivid, clean, and game-ready`;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-template", async (req: Request, res: Response) => {
     try {
@@ -172,14 +243,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const type = templateType === "pants" ? "pants" : "shirt";
-      const limbLabel =
-        type === "shirt"
-          ? "arms (right arm and left arm)"
-          : "legs (right leg and left leg)";
 
-      const fullPrompt = `Create a flat 2D texture/pattern design for a Roblox classic ${type} template. The design should be: ${prompt}. 
-      
-IMPORTANT: This is a flat texture map, NOT a 3D rendering. Create a seamless, clean pattern or design that would look good when wrapped around a blocky character. The design should work as a clothing texture with clear colors and patterns. No text, no 3D effects, no shadows, no background - just the flat clothing design/pattern. Make it colorful and detailed as a game clothing texture.`;
+      const fullPrompt = buildTemplatePrompt(prompt, type);
 
       const response = await openai.images.generate({
         model: "gpt-image-1",
