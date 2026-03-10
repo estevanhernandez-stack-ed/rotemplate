@@ -231,19 +231,19 @@ This is an unwrapped clothing texture. It has rectangular regions that map onto 
 LAYOUT:
 
 TORSO — in the upper area of the image:
-- TOP face: a wide short rectangle at the very top (top 13% of image) — THIS FOLDS UNDER THE HEAD. Fill with base color only. NEVER place any part of the main graphic here.
-- RIGHT side: a tall narrow rectangle to the left of the front face
-- FRONT face: a large square that spans from about 13% to 36% down from the top, horizontally centered — THIS IS THE MAIN VISIBLE AREA. Place the main chest design CENTERED WITHIN THIS ZONE — between 13% and 36% from the top of the image, centered horizontally. The graphic must NOT extend above 13% (that's the fold) or below 36% (that's the hem). Think of it as the upper-middle band of the image.
-- LEFT side: a tall narrow rectangle to the right of the front face
-- BACK face: a large square to the far right, same vertical zone as the front face (13%-36% from top) — Center the back design here
-- BOTTOM face: a wide short rectangle just below the front face — bottom hem, fill with base color
+- TOP face: a wide rectangle at the very top (y=8 to y=74, 66px tall) — THIS FOLDS UNDER THE HEAD. Fill with base color only. NEVER place any part of the main graphic here.
+- RIGHT side: a narrow rectangle at x=167 to x=231 (64px wide), y=74 to y=202
+- FRONT face: a 128x128 pixel square at x=231, y=74 (to x=359, y=202) — THIS IS THE MAIN VISIBLE AREA. The main chest graphic MUST fit entirely inside this 128x128px box. Center the design within it with padding. Do NOT let the graphic extend above y=74 or below y=202 or left of x=231 or right of x=359.
+- LEFT side: a narrow rectangle at x=359 to x=423 (64px wide), y=74 to y=202
+- BACK face: a 128x128 pixel square at x=423, y=74 (to x=551, y=202) — Center the back design within this box
+- BOTTOM face: a wide rectangle below the front face (y=202 to y=268) — bottom hem, fill with base color
 
 ARMS — the LOWER portion of the image (roughly y=289 to y=549). These are JUST SLEEVES:
 - Right arm sleeve (bottom-left): several tall narrow rectangles. Fill with the same fabric color/pattern as the torso. These are sleeves — NO main graphics, NO logos, NO character art here. Just matching fabric.
 - Left arm sleeve (bottom-right): mirrors the right arm. Just matching fabric.
 
 CRITICAL RULES:
-- The main graphic/design must be placed between 13% and 36% from the top of the image, centered horizontally. This is where the torso FRONT face is. Do NOT place it in the top 13% (that folds under the head) or below 36% (that's the arms). If you center the graphic on the whole canvas, it will end up on the arms instead of the chest.
+- The main graphic MUST fit inside the 128x128px FRONT face box (x=231, y=74 to x=359, y=202). This is NOT the center of the image — it is in the upper-left quadrant. If you center the graphic on the whole canvas, it will land on the arms, not the chest.
 - Fill the ENTIRE 585x559 canvas with the shirt's base color/fabric — EVERY SINGLE PIXEL from top to bottom. The bottom half contains the sleeves — fill them with matching fabric color/pattern, NOT with the main graphic.
 - NO white space, NO transparency, NO gaps between regions, NO visible borders or grid lines
 - The FRONT and BACK torso squares in the upper quarter are the most important — center any logos, graphics, or key design elements within them
@@ -260,19 +260,19 @@ This is an unwrapped clothing texture. It has rectangular regions that map onto 
 LAYOUT:
 
 WAIST/HIP — in the upper area of the image:
-- TOP face: a wide short rectangle at the very top (top 13% of image) — THIS FOLDS UNDER THE UPPER BODY. Fill with base color only. NEVER place any part of the main graphic here.
-- RIGHT side: a tall narrow rectangle to the left of the front face — right hip
-- FRONT face: a large square that spans from about 13% to 36% down from the top, horizontally centered — THIS IS THE MAIN VISIBLE AREA. Place the main design CENTERED WITHIN THIS ZONE — between 13% and 36% from the top of the image, centered horizontally. The graphic must NOT extend above 13% (that's the fold) or below 36%. Think of it as the upper-middle band of the image.
-- LEFT side: a tall narrow rectangle to the right of the front face — left hip
-- BACK face: a large square to the far right, same vertical zone as the front face (13%-36% from top) — Center back design here (back pockets, pattern)
-- BOTTOM face: a wide short rectangle just below the front face — seat area, fill with base color
+- TOP face: a wide rectangle at the very top (y=8 to y=74, 66px tall) — THIS FOLDS UNDER THE UPPER BODY. Fill with base color only. NEVER place any part of the main graphic here.
+- RIGHT side: a narrow rectangle at x=167 to x=231 (64px wide), y=74 to y=202 — right hip
+- FRONT face: a 128x128 pixel square at x=231, y=74 (to x=359, y=202) — THIS IS THE MAIN VISIBLE AREA. The main waist design MUST fit entirely inside this 128x128px box. Center the design within it with padding. Do NOT let the graphic extend above y=74 or below y=202 or left of x=231 or right of x=359.
+- LEFT side: a narrow rectangle at x=359 to x=423 (64px wide), y=74 to y=202 — left hip
+- BACK face: a 128x128 pixel square at x=423, y=74 (to x=551, y=202) — Center back design (pockets, pattern) within this box
+- BOTTOM face: a wide rectangle below the front face (y=202 to y=268) — seat area, fill with base color
 
 LEGS — the LOWER portion of the image (roughly y=289 to y=549). These are JUST PANT LEGS:
 - Right leg (bottom-left): several tall narrow rectangles. Fill with the same fabric color/pattern as the waist. These are pant legs — NO main graphics, NO logos here. Just matching fabric with seam/stitch details.
 - Left leg (bottom-right): mirrors the right leg. Just matching fabric.
 
 CRITICAL RULES:
-- The main design must be placed between 13% and 36% from the top of the image, centered horizontally. This is where the waist FRONT face is. Do NOT place it in the top 13% (that folds under the body) or below 36% (that's the legs). If you center the graphic on the whole canvas, it will end up on the legs instead of the waist.
+- The main design MUST fit inside the 128x128px FRONT face box (x=231, y=74 to x=359, y=202). This is NOT the center of the image — it is in the upper-left quadrant. If you center the graphic on the whole canvas, it will land on the legs, not the waist.
 - Fill the ENTIRE 585x559 canvas with the pants' base color/fabric — EVERY SINGLE PIXEL from top to bottom. The bottom half contains the pant legs — fill them with matching fabric color/pattern, NOT with the main graphic.
 - NO white space, NO transparency, NO gaps between regions, NO visible borders or grid lines
 - The FRONT and BACK squares in the upper quarter are the most important — center any belt, pockets, or key design elements within them
