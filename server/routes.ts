@@ -223,79 +223,54 @@ GARMENT TYPE: ${type === "shirt" ? "shirt/top" : "pants/bottoms"}`
 
 function buildTemplatePrompt(userPrompt: string, type: "shirt" | "pants"): string {
   if (type === "shirt") {
-    return `Create a flat 2D unwrapped texture map for a Roblox R15 classic SHIRT template at exactly 585x559 pixels. The design is: ${userPrompt}
+    return `Create a flat 2D clothing texture for a Roblox R15 SHIRT at exactly 585x559 pixels. The design is: ${userPrompt}
 
-This is an UNWRAPPED TEXTURE MAP — a flat image where different rectangular regions represent different faces of a blocky 3D character. The image has a TRANSPARENT background with colored regions placed at specific positions.
+IMPORTANT: Paint the ENTIRE 585x559 canvas with the clothing design — do NOT leave transparent gaps, empty space, or visible borders between sections. Fill everything edge-to-edge with continuous color and pattern. The system will automatically crop the correct regions.
 
-EXACT LAYOUT — draw the design ONLY in these rectangular regions:
+The canvas represents an unwrapped shirt with these key areas:
 
-TORSO (upper half of image):
-- TORSO TOP face: centered near top, a wide short rectangle — THIS FOLDS UNDER THE CHARACTER'S HEAD AND IS BARELY VISIBLE. Only fill with the base fabric color/pattern, NEVER place logos, numbers, text, or important design elements here.
-- TORSO RIGHT side: left of center, a tall rectangle (right side of the torso as seen from front)
-- TORSO FRONT: center, a large 128x128 square — THIS IS THE MAIN VISIBLE AREA. Center the primary shirt design ENTIRELY within this square only (chest, buttons, logo, main pattern). Do NOT let the design extend upward into the top face rectangle above.
-- TORSO LEFT side: right of center, a tall rectangle (left side of torso)  
-- TORSO BACK: far right area, a large 128x128 square same size as front — Center the back design ENTIRELY within this square (back pattern, number, etc.). Do NOT let it extend into the top rectangle.
-- TORSO BOTTOM face: below center, a wide short rectangle (bottom hem of shirt)
+TORSO (upper-center area of the canvas):
+- The torso FRONT face is a 128x128 square near the center of the upper half. THIS IS THE MOST VISIBLE AREA — center the main design element here (logo, chest graphic, jersey number, buttons). The design element should be vertically and horizontally centered within this area with padding on all sides.
+- The torso BACK face is a 128x128 square to the right of the front. Center any back design here (back number, back graphic).
+- The TOP strip above the front face folds under the character's head and is barely visible — just continue the base color/pattern here, never put logos or text.
+- Side faces flank the front — continue the fabric pattern through them.
 
-RIGHT ARM (bottom-left area):
-- Four tall rectangles side by side: Left face, Back face, Right face, Front face of the right arm
-- Small squares above and below the front face for arm top and bottom
-- Design should show a sleeve — consistent with the torso pattern
+ARMS (lower area of the canvas):
+- Right arm regions in the bottom-left, left arm regions in the bottom-right
+- Sleeves should match the torso's fabric/color
 
-LEFT ARM (bottom-right area):
-- Four tall rectangles side by side: Front face, Left face, Back face, Right face of the left arm
-- Small squares above and below the front face for arm top and bottom
-- Design should show a sleeve — mirror of the right arm
-
-CRITICAL RULES:
-- This is a FLAT TEXTURE MAP, not a 3D rendering
-- ALL regions must have the shirt design/pattern applied consistently
-- The FRONT and BACK torso squares are the most prominent — center logos, numbers, and key design elements WITHIN those squares only, vertically and horizontally centered with equal padding on all sides
-- The TOP face rectangle folds under the head — ONLY put base color/fabric there, never logos or text
-- Arm regions should have matching sleeves
-- SEAMLESS EDGES: Adjacent regions share edges in 3D. The colors and patterns at the borders where regions touch MUST match perfectly — no visible lines, gaps, or color mismatches at region boundaries. The design should look continuous when the template wraps around the 3D model.
-- TEXT/NUMBERS SIZING: Any text, numbers, or lettering must be SMALL enough to fit entirely within a single 128x128 square with at least 15-20px padding on all sides. Jersey numbers should take up about 40-60% of the square, not fill it edge-to-edge. Text must NEVER overflow or span across multiple regions.
-- No 3D shading, no perspective, no shadows — use FLAT colors only
-- Transparent/empty background outside the clothing regions
-- Make the design vivid, clean, and game-ready`;
+RULES:
+- Fill the ENTIRE canvas with the clothing design — solid color, pattern, or fabric texture everywhere. NO transparency, NO gaps, NO empty areas, NO visible grid lines or borders between regions.
+- The design should be ONE continuous piece of clothing painted across the full canvas
+- Center logos, numbers, and key graphics on the FRONT face area (upper-center 128x128 square), with padding so they don't touch the edges
+- TEXT/NUMBERS: Must be compact — jersey numbers should be about 40-60% of the 128x128 area, never edge-to-edge. Keep 15-20px padding around text.
+- Use flat colors — no 3D shading, no perspective, no shadows
+- Make it vivid, clean, and game-ready`;
   }
 
-  return `Create a flat 2D unwrapped texture map for a Roblox R15 classic PANTS template at exactly 585x559 pixels. The design is: ${userPrompt}
+  return `Create a flat 2D clothing texture for a Roblox R15 PANTS at exactly 585x559 pixels. The design is: ${userPrompt}
 
-This is an UNWRAPPED TEXTURE MAP — a flat image where different rectangular regions represent different faces of a blocky 3D character's lower body. The image has a TRANSPARENT background with colored regions placed at specific positions.
+IMPORTANT: Paint the ENTIRE 585x559 canvas with the clothing design — do NOT leave transparent gaps, empty space, or visible borders between sections. Fill everything edge-to-edge with continuous color and pattern. The system will automatically crop the correct regions.
 
-EXACT LAYOUT — draw the design ONLY in these rectangular regions:
+The canvas represents unwrapped pants with these key areas:
 
-TORSO/WAIST (upper half of image):
-- TORSO TOP face: centered near top, a wide short rectangle — THIS FOLDS UNDER THE CHARACTER'S UPPER BODY AND IS BARELY VISIBLE. Only fill with the base fabric color/pattern (e.g. waistband color), NEVER place important design elements here.
-- TORSO RIGHT side: left of center, a tall rectangle (right hip)
-- TORSO FRONT: center, a large 128x128 square — THIS IS THE MAIN VISIBLE AREA. Center the main pants front design ENTIRELY within this square only (fly, belt, pockets, main pattern). Do NOT let the design extend upward into the top face rectangle above.
-- TORSO LEFT side: right of center, a tall rectangle (left hip)
-- TORSO BACK: far right area, a large 128x128 square same size as front — Center the back design ENTIRELY within this square (back pockets, pattern). Do NOT let it extend into the top rectangle.
-- TORSO BOTTOM face: below center, a wide short rectangle (crotch/seat area)
+WAIST/HIP (upper-center area of the canvas):
+- The waist FRONT face is a 128x128 square near the center of the upper half. THIS IS THE MOST VISIBLE AREA — center the main design here (fly, belt, front pockets, pattern). The design element should be vertically and horizontally centered within this area with padding on all sides.
+- The waist BACK face is a 128x128 square to the right of the front. Center back design here (back pockets, pattern).
+- The TOP strip above the front face folds under the upper body and is barely visible — just continue the base color/pattern here, never put important details.
+- Side faces flank the front — continue the fabric pattern through them.
 
-RIGHT LEG (bottom-left area):
-- Four tall rectangles side by side: Left face, Back face, Right face, Front face of the right leg
-- Small squares above and below the front face for leg top and bottom
-- Design should show a pant leg — consistent with the waist pattern, showing the leg portion of jeans/pants/etc.
+LEGS (lower area of the canvas):
+- Right leg regions in the bottom-left, left leg regions in the bottom-right
+- Pant legs should match the waist's fabric/color and show appropriate leg details (seams, stitching, etc.)
 
-LEFT LEG (bottom-right area):
-- Four tall rectangles side by side: Front face, Left face, Back face, Right face of the left leg
-- Small squares above and below the front face for leg top and bottom
-- Design should show a pant leg — mirror of the right leg
-
-CRITICAL RULES:
-- This is a FLAT TEXTURE MAP, not a 3D rendering
-- ALL regions must have the pants design/pattern applied consistently
-- The FRONT and BACK torso squares are the most prominent — center belt, pockets, and key design elements WITHIN those squares only, vertically and horizontally centered with equal padding on all sides
-- The TOP face rectangle folds under the upper body — ONLY put base color/fabric there, never important details
-- Leg regions should show matching pant legs (jeans seams, fabric texture, etc.)
-- The waist/torso area connects visually to the leg areas
-- SEAMLESS EDGES: Adjacent regions share edges in 3D. The colors and patterns at the borders where regions touch MUST match perfectly — no visible lines, gaps, or color mismatches at region boundaries. The design should look continuous when the template wraps around the 3D model.
-- TEXT/NUMBERS SIZING: Any text or branding must be SMALL enough to fit entirely within a single 128x128 square with at least 15-20px padding on all sides. Text must NEVER overflow or span across multiple regions.
-- No 3D shading, no perspective, no shadows — use FLAT colors only
-- Transparent/empty background outside the clothing regions
-- Make the design vivid, clean, and game-ready`;
+RULES:
+- Fill the ENTIRE canvas with the clothing design — solid color, pattern, or fabric texture everywhere. NO transparency, NO gaps, NO empty areas, NO visible grid lines or borders between regions.
+- The design should be ONE continuous piece of clothing painted across the full canvas
+- Center belt, pockets, and key details on the FRONT face area (upper-center 128x128 square), with padding so they don't touch the edges
+- TEXT/NUMBERS: Must be compact and fit within a 128x128 area with 15-20px padding. Never overflow across areas.
+- Use flat colors — no 3D shading, no perspective, no shadows
+- Make it vivid, clean, and game-ready`;
 }
 
 async function generateDesignQuestions(userPrompt: string, type: "shirt" | "pants"): Promise<{ questions: Array<{ id: string; question: string; options: string[] }> }> {
