@@ -250,11 +250,12 @@ LEFT ARM (bottom-right area):
 CRITICAL RULES:
 - This is a FLAT TEXTURE MAP, not a 3D rendering
 - ALL regions must have the shirt design/pattern applied consistently
-- The FRONT and BACK torso squares are the most prominent — center logos, numbers, and key design elements WITHIN those squares only
+- The FRONT and BACK torso squares are the most prominent — center logos, numbers, and key design elements WITHIN those squares only, vertically and horizontally centered with equal padding on all sides
 - The TOP face rectangle folds under the head — ONLY put base color/fabric there, never logos or text
 - Arm regions should have matching sleeves
-- TEXT/NUMBERS SIZING: Any text, numbers, or lettering must be SMALL enough to fit entirely within a single 128x128 square with padding around it. Jersey numbers should take up about 40-60% of the square, not fill it edge-to-edge. Text must NEVER overflow or span across multiple regions.
-- No 3D shading, no perspective, no shadows
+- SEAMLESS EDGES: Adjacent regions share edges in 3D. The colors and patterns at the borders where regions touch MUST match perfectly — no visible lines, gaps, or color mismatches at region boundaries. The design should look continuous when the template wraps around the 3D model.
+- TEXT/NUMBERS SIZING: Any text, numbers, or lettering must be SMALL enough to fit entirely within a single 128x128 square with at least 15-20px padding on all sides. Jersey numbers should take up about 40-60% of the square, not fill it edge-to-edge. Text must NEVER overflow or span across multiple regions.
+- No 3D shading, no perspective, no shadows — use FLAT colors only
 - Transparent/empty background outside the clothing regions
 - Make the design vivid, clean, and game-ready`;
   }
@@ -286,20 +287,109 @@ LEFT LEG (bottom-right area):
 CRITICAL RULES:
 - This is a FLAT TEXTURE MAP, not a 3D rendering
 - ALL regions must have the pants design/pattern applied consistently
-- The FRONT and BACK torso squares are the most prominent — center belt, pockets, and key design elements WITHIN those squares only
+- The FRONT and BACK torso squares are the most prominent — center belt, pockets, and key design elements WITHIN those squares only, vertically and horizontally centered with equal padding on all sides
 - The TOP face rectangle folds under the upper body — ONLY put base color/fabric there, never important details
 - Leg regions should show matching pant legs (jeans seams, fabric texture, etc.)
 - The waist/torso area connects visually to the leg areas
-- TEXT/NUMBERS SIZING: Any text or branding must be SMALL enough to fit entirely within a single 128x128 square with padding around it. Text must NEVER overflow or span across multiple regions.
-- No 3D shading, no perspective, no shadows
+- SEAMLESS EDGES: Adjacent regions share edges in 3D. The colors and patterns at the borders where regions touch MUST match perfectly — no visible lines, gaps, or color mismatches at region boundaries. The design should look continuous when the template wraps around the 3D model.
+- TEXT/NUMBERS SIZING: Any text or branding must be SMALL enough to fit entirely within a single 128x128 square with at least 15-20px padding on all sides. Text must NEVER overflow or span across multiple regions.
+- No 3D shading, no perspective, no shadows — use FLAT colors only
 - Transparent/empty background outside the clothing regions
 - Make the design vivid, clean, and game-ready`;
 }
 
+async function generateDesignQuestions(userPrompt: string, type: "shirt" | "pants"): Promise<{ questions: Array<{ id: string; question: string; options: string[] }> }> {
+  const garment = type === "shirt" ? "shirt/top" : "pants/bottoms";
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: `You are a Roblox clothing designer helping a young user refine their ${garment} design idea. Based on their initial prompt, generate 3-4 quick multiple-choice questions to fill in any missing design details.
+
+RULES:
+- Only ask about details NOT already specified in the prompt
+- Each question should have 3-5 short, trendy options
+- Keep questions fun and casual — target audience is Gen Alpha (ages 8-18)
+- Use Gen Alpha/Gen Z language (fire, bussin, slay, clean, drip, etc.)
+- Questions should cover: color palette, style vibe, specific details, and overall mood
+- Do NOT ask about technical stuff — keep it about the look and feel
+
+POSSIBLE QUESTION TOPICS (pick what's missing from the prompt):
+- Main color vibe (if no colors specified)
+- Style era/aesthetic (Y2K, dark academia, cyberpunk, cottagecore, etc.)
+- Pattern type (solid, gradient, camo, plaid, stripes, etc.)
+- Detail level (minimalist vs. maxed out details)
+- Mood/energy (chill, aggressive, cute, mysterious, sporty)
+- Specific elements (logos, text, graphics, textures)
+${type === "shirt" ? "- Sleeve style (short, long, rolled up)" : "- Fit style (baggy, slim, cargo, jogger)"}
+
+Return ONLY valid JSON in this exact format:
+{
+  "questions": [
+    {
+      "id": "color_vibe",
+      "question": "What colors are we going with?",
+      "options": ["Dark & moody", "Bright & bold", "Pastel vibes", "Earth tones", "Neon"]
+    }
+  ]
+}
+
+Do NOT include questions about things the user already described. If the prompt is very detailed and covers everything, return fewer questions (minimum 2).`
+      },
+      {
+        role: "user",
+        content: userPrompt
+      }
+    ],
+    max_tokens: 500,
+    temperature: 0.7,
+  });
+
+  const content = response.choices[0]?.message?.content?.trim() || "";
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (parsed.questions && Array.isArray(parsed.questions)) {
+      const validated = parsed.questions
+        .filter((q: any) =>
+          q && typeof q.id === "string" && typeof q.question === "string" &&
+          Array.isArray(q.options) && q.options.length >= 2 && q.options.length <= 6 &&
+          q.options.every((o: any) => typeof o === "string")
+        )
+        .slice(0, 4)
+        .map((q: any, i: number) => ({
+          id: q.id || `q_${i}`,
+          question: q.question,
+          options: q.options.slice(0, 5),
+        }));
+      if (validated.length > 0) {
+        return { questions: validated };
+      }
+    }
+  }
+  return { questions: [] };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  app.post("/api/generate-template", async (req: Request, res: Response) => {
+  app.post("/api/design-interview", async (req: Request, res: Response) => {
     try {
       const { prompt, templateType } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ error: "Prompt is required" });
+      }
+      const type = templateType === "pants" ? "pants" : "shirt";
+      const result = await generateDesignQuestions(prompt, type);
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error generating design questions:", error);
+      res.status(500).json({ error: error?.message || "Failed to generate questions", questions: [] });
+    }
+  });
+
+  app.post("/api/generate-template", async (req: Request, res: Response) => {
+    try {
+      const { prompt, templateType, designContext } = req.body;
 
       if (!prompt) {
         return res.status(400).json({ error: "Prompt is required" });
@@ -307,7 +397,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const type = templateType === "pants" ? "pants" : "shirt";
 
-      const enhancedPrompt = await enhancePrompt(prompt, type);
+      let combinedPrompt = prompt;
+      if (designContext && typeof designContext === "string" && designContext.trim()) {
+        combinedPrompt = `${prompt}. Additional design details: ${designContext}`;
+      }
+
+      const enhancedPrompt = await enhancePrompt(combinedPrompt, type);
       const fullPrompt = buildTemplatePrompt(enhancedPrompt, type);
 
       const response = await openai.images.generate({

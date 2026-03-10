@@ -63,6 +63,12 @@ export default function EditorScreen() {
   const [aiImageBase64, setAiImageBase64] = useState<string | null>(null);
   const [showUploadGuide, setShowUploadGuide] = useState(false);
 
+  type InterviewQuestion = { id: string; question: string; options: string[] };
+  const [interviewQuestions, setInterviewQuestions] = useState<InterviewQuestion[]>([]);
+  const [interviewAnswers, setInterviewAnswers] = useState<Record<string, string>>({});
+  const [interviewLoading, setInterviewLoading] = useState(false);
+  const [showInterview, setShowInterview] = useState(false);
+
   const [mediaPermission, requestMediaPermission] =
     MediaLibrary.usePermissions();
 
@@ -188,6 +194,86 @@ export default function EditorScreen() {
       setSelectedRegion(null);
     }
   }, []);
+
+  const handleStartInterview = useCallback(async () => {
+    if (!aiPrompt.trim()) return;
+
+    try {
+      setInterviewLoading(true);
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+
+      const res = await apiRequest("POST", "/api/design-interview", {
+        prompt: aiPrompt.trim(),
+        templateType,
+      });
+      const data = await res.json();
+
+      if (data.questions && data.questions.length > 0) {
+        setInterviewQuestions(data.questions);
+        setInterviewAnswers({});
+        setShowInterview(true);
+      } else {
+        handleAiGenerate();
+      }
+    } catch (err: any) {
+      console.error("Interview error:", err);
+      handleAiGenerate();
+    } finally {
+      setInterviewLoading(false);
+    }
+  }, [aiPrompt, templateType]);
+
+  const handleSelectAnswer = useCallback((questionId: string, option: string) => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    setInterviewAnswers((prev) => {
+      if (prev[questionId] === option) {
+        const next = { ...prev };
+        delete next[questionId];
+        return next;
+      }
+      return { ...prev, [questionId]: option };
+    });
+  }, []);
+
+  const handleGenerateFromInterview = useCallback(async () => {
+    const contextParts = interviewQuestions
+      .filter((q) => interviewAnswers[q.id])
+      .map((q) => `${q.question}: ${interviewAnswers[q.id]}`);
+    const designContext = contextParts.join(". ");
+
+    try {
+      setAiLoading(true);
+      setShowInterview(false);
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+
+      const res = await apiRequest("POST", "/api/generate-template", {
+        prompt: aiPrompt.trim(),
+        templateType,
+        designContext,
+      });
+      const data = await res.json();
+
+      if (data.image) {
+        setAiImageBase64(data.image);
+        if (Platform.OS !== "web") {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      } else {
+        Alert.alert("Error", data.error || "Failed to generate image");
+      }
+    } catch (err: any) {
+      console.error("AI generation error:", err);
+      Alert.alert("Error", "Failed to generate design. Please try again.");
+    } finally {
+      setAiLoading(false);
+    }
+  }, [aiPrompt, templateType, interviewQuestions, interviewAnswers]);
 
   const handleAiGenerate = useCallback(async () => {
     if (!aiPrompt.trim()) return;
@@ -482,12 +568,12 @@ export default function EditorScreen() {
               />
             </View>
             <Pressable
-              onPress={handleAiGenerate}
-              disabled={aiLoading || !aiPrompt.trim()}
+              onPress={handleStartInterview}
+              disabled={aiLoading || interviewLoading || !aiPrompt.trim()}
               style={({ pressed }) => [
                 styles.aiGenerateBtn,
                 pressed && styles.btnPressed,
-                (aiLoading || !aiPrompt.trim()) && styles.disabledBtn,
+                (aiLoading || interviewLoading || !aiPrompt.trim()) && styles.disabledBtn,
               ]}
             >
               {aiLoading ? (
@@ -495,13 +581,88 @@ export default function EditorScreen() {
                   <ActivityIndicator size="small" color="#fff" />
                   <Text style={styles.aiGenerateBtnText}>Generating...</Text>
                 </View>
+              ) : interviewLoading ? (
+                <View style={styles.aiLoadingRow}>
+                  <ActivityIndicator size="small" color="#fff" />
+                  <Text style={styles.aiGenerateBtnText}>Setting up design...</Text>
+                </View>
               ) : (
                 <View style={styles.aiLoadingRow}>
                   <Ionicons name="sparkles" size={18} color="#fff" />
-                  <Text style={styles.aiGenerateBtnText}>Generate Design</Text>
+                  <Text style={styles.aiGenerateBtnText}>Design with AI</Text>
                 </View>
               )}
             </Pressable>
+
+            {showInterview && interviewQuestions.length > 0 && (
+              <View style={styles.interviewContainer}>
+                <View style={styles.interviewHeader}>
+                  <Ionicons name="chatbubbles" size={20} color={Colors.light.tint} />
+                  <Text style={styles.interviewTitle}>Quick Design Check</Text>
+                </View>
+                <Text style={styles.interviewSubtitle}>
+                  Help us nail the vibe — pick what fits your vision
+                </Text>
+
+                {interviewQuestions.map((q) => (
+                  <View key={q.id} style={styles.interviewQuestion}>
+                    <Text style={styles.interviewQuestionText}>{q.question}</Text>
+                    <View style={styles.interviewOptions}>
+                      {(Array.isArray(q.options) ? q.options : []).map((option) => (
+                        <Pressable
+                          key={option}
+                          onPress={() => handleSelectAnswer(q.id, option)}
+                          style={({ pressed }) => [
+                            styles.interviewOption,
+                            interviewAnswers[q.id] === option && styles.interviewOptionSelected,
+                            pressed && styles.btnPressed,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.interviewOptionText,
+                              interviewAnswers[q.id] === option && styles.interviewOptionTextSelected,
+                            ]}
+                          >
+                            {option}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                ))}
+
+                <View style={styles.interviewActions}>
+                  <Pressable
+                    disabled={aiLoading}
+                    onPress={() => {
+                      setShowInterview(false);
+                      setInterviewQuestions([]);
+                      handleAiGenerate();
+                    }}
+                    style={({ pressed }) => [
+                      styles.interviewSkipBtn,
+                      pressed && styles.btnPressed,
+                      aiLoading && styles.disabledBtn,
+                    ]}
+                  >
+                    <Text style={styles.interviewSkipText}>Skip & Generate</Text>
+                  </Pressable>
+                  <Pressable
+                    disabled={aiLoading}
+                    onPress={handleGenerateFromInterview}
+                    style={({ pressed }) => [
+                      styles.interviewGenerateBtn,
+                      pressed && styles.btnPressed,
+                      aiLoading && styles.disabledBtn,
+                    ]}
+                  >
+                    <Ionicons name="sparkles" size={16} color="#fff" />
+                    <Text style={styles.interviewGenerateBtnText}>Generate</Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
 
             {aiImageBase64 && (
               <View style={styles.aiPreviewContainer}>
@@ -1148,5 +1309,97 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_500Medium",
     color: Colors.light.text,
+  },
+  interviewContainer: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: 14,
+    padding: 16,
+    gap: 16,
+    borderWidth: 1,
+    borderColor: Colors.light.tint + "40",
+  },
+  interviewHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  interviewTitle: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.text,
+  },
+  interviewSubtitle: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.textSecondary,
+    marginTop: -8,
+  },
+  interviewQuestion: {
+    gap: 8,
+  },
+  interviewQuestionText: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: Colors.light.text,
+  },
+  interviewOptions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  interviewOption: {
+    backgroundColor: Colors.light.surfaceSecondary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  interviewOptionSelected: {
+    backgroundColor: Colors.light.tint + "20",
+    borderColor: Colors.light.tint,
+  },
+  interviewOptionText: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.text,
+  },
+  interviewOptionTextSelected: {
+    color: Colors.light.tint,
+    fontFamily: "Inter_600SemiBold",
+  },
+  interviewActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 4,
+  },
+  interviewSkipBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  interviewSkipText: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: Colors.light.textSecondary,
+  },
+  interviewGenerateBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: Colors.light.tint,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  interviewGenerateBtnText: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: "#fff",
   },
 });

@@ -73,9 +73,11 @@ Preferred communication style: Simple, everyday language.
 - **R15 template coordinates fixed**: All region coordinates now match official Roblox R15 specifications
 - **Server-side compositing**: POST /api/composite-fill endpoint uses sharp to produce correct 585x559px PNGs with transparency
 - Added AI generation mode using OpenAI gpt-image-1 for natural language clothing design
-- **AI prompt enhancement pipeline**: Two-stage system — GPT-4o-mini first enhances vague user prompts with Gen Alpha/Gen Z trending Roblox aesthetics (Y2K streetwear, hypebeast, dark academia, cyberpunk, anime, etc.), then feeds the enhanced description into the image generation prompt with region-specific R15 layout instructions
-- **Text/number sizing constraints**: AI prompts explicitly enforce that text, numbers, and logos must fit within 128x128px regions with padding — prevents overflow across template faces
-- **Region-aware prompts**: Torso TOP face explicitly marked as "folds under head" so AI never places important design elements there; main designs centered on FRONT and BACK squares only
+- **AI design interview flow**: After entering a prompt, GPT-4o-mini generates 3-4 trendy multiple-choice questions to refine the design (colors, vibe, patterns, details). Users can answer or skip. Answers feed into generation as additional context.
+- **AI prompt enhancement pipeline**: Three-stage system — design interview (optional) → GPT-4o-mini prompt enhancement with Gen Alpha/Gen Z aesthetics → region-specific R15 image generation
+- **Text/number sizing constraints**: AI prompts enforce text/numbers fit within 128x128px with 15-20px padding — prevents overflow across template faces
+- **Seamless edges**: Prompts enforce matching colors/patterns at region boundaries to prevent visible seam lines on the 3D model
+- **Region-aware prompts**: Torso TOP face explicitly marked as "folds under head" so AI never places important design elements there; main designs vertically and horizontally centered on FRONT and BACK squares only
 - Added freehand drawing mode with brush sizes and undo
 - Fixed PNG export to work on both web (download link) and mobile (photo library save)
 - Updated prompt suggestion chips with Gen Alpha trending styles (Y2K, anime, dark academia, cyberpunk, etc.)
