@@ -162,6 +162,65 @@ ${regionRects}
   return result.toString("base64");
 }
 
+async function enhancePrompt(userPrompt: string, type: "shirt" | "pants"): Promise<string> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `You are a Roblox clothing designer who specializes in trendy Gen Alpha / Gen Z aesthetics. Your job is to take a user's clothing prompt and enhance it into a detailed visual design description for an AI image generator.
+
+TARGET AUDIENCE: Roblox players (mostly ages 8-18). Think current trends, not generic designs.
+
+STYLE DEFAULTS — when the user doesn't specify an exact style, lean toward these popular Roblox/Gen Alpha aesthetics:
+- Y2K streetwear (baggy, oversized, layered looks)
+- Hypebeast / drip culture (Supreme-style box logos, Off-White arrows, designer-inspired)
+- Dark academia / grunge (plaid, chains, layered dark tones)
+- Cottagecore / soft aesthetics (pastels, florals, cozy vibes)
+- Cyberpunk / techwear (neon accents, utility straps, futuristic)
+- Anime-inspired (manga panels, Japanese text, kawaii elements)
+- Skater / indie (graphic tees, band-style art, vintage wash)
+- Clean minimalist (monochrome, small embroidered logos, subtle branding)
+- Preppy / old money (polo collars, crests, navy/cream/green)
+- Sports jerseys / athletic wear (bold numbers, team-style stripes)
+
+TEXT RULES (CRITICAL):
+- If the design includes text, numbers, or lettering: specify that text must be SMALL and fit ENTIRELY within a 128x128 pixel square
+- Numbers on jerseys should be compact, not giant — think actual jersey proportions where the number takes up about 40-60% of the chest area
+- Any text must use a font size that leaves padding/margins around it
+- NEVER let text or numbers overflow beyond a single face region
+
+DESIGN RULES:
+- Keep patterns tileable/repeatable across regions when possible
+- Specify exact colors (hex or descriptive) rather than vague color words
+- Describe textures and materials (matte, glossy, denim weave, knit, etc.)
+- Add small details that make it feel premium (stitching, subtle gradients, embroidery)
+
+OUTPUT: Return ONLY the enhanced design description. No explanations, no preamble. Keep it under 150 words. The description should be purely visual — what the clothing LOOKS like.
+
+GARMENT TYPE: ${type === "shirt" ? "shirt/top" : "pants/bottoms"}`
+        },
+        {
+          role: "user",
+          content: userPrompt
+        }
+      ],
+      max_tokens: 200,
+      temperature: 0.8,
+    });
+
+    const enhanced = response.choices[0]?.message?.content?.trim();
+    if (enhanced && enhanced.length > 10) {
+      return enhanced;
+    }
+    return userPrompt;
+  } catch (error) {
+    console.error("Prompt enhancement failed, using original:", error);
+    return userPrompt;
+  }
+}
+
 function buildTemplatePrompt(userPrompt: string, type: "shirt" | "pants"): string {
   if (type === "shirt") {
     return `Create a flat 2D unwrapped texture map for a Roblox R15 classic SHIRT template at exactly 585x559 pixels. The design is: ${userPrompt}
@@ -194,6 +253,7 @@ CRITICAL RULES:
 - The FRONT and BACK torso squares are the most prominent — center logos, numbers, and key design elements WITHIN those squares only
 - The TOP face rectangle folds under the head — ONLY put base color/fabric there, never logos or text
 - Arm regions should have matching sleeves
+- TEXT/NUMBERS SIZING: Any text, numbers, or lettering must be SMALL enough to fit entirely within a single 128x128 square with padding around it. Jersey numbers should take up about 40-60% of the square, not fill it edge-to-edge. Text must NEVER overflow or span across multiple regions.
 - No 3D shading, no perspective, no shadows
 - Transparent/empty background outside the clothing regions
 - Make the design vivid, clean, and game-ready`;
@@ -230,6 +290,7 @@ CRITICAL RULES:
 - The TOP face rectangle folds under the upper body — ONLY put base color/fabric there, never important details
 - Leg regions should show matching pant legs (jeans seams, fabric texture, etc.)
 - The waist/torso area connects visually to the leg areas
+- TEXT/NUMBERS SIZING: Any text or branding must be SMALL enough to fit entirely within a single 128x128 square with padding around it. Text must NEVER overflow or span across multiple regions.
 - No 3D shading, no perspective, no shadows
 - Transparent/empty background outside the clothing regions
 - Make the design vivid, clean, and game-ready`;
@@ -246,7 +307,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const type = templateType === "pants" ? "pants" : "shirt";
 
-      const fullPrompt = buildTemplatePrompt(prompt, type);
+      const enhancedPrompt = await enhancePrompt(prompt, type);
+      const fullPrompt = buildTemplatePrompt(enhancedPrompt, type);
 
       const response = await openai.images.generate({
         model: "gpt-image-1",

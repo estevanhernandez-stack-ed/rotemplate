@@ -73,6 +73,9 @@ Preferred communication style: Simple, everyday language.
 - **R15 template coordinates fixed**: All region coordinates now match official Roblox R15 specifications
 - **Server-side compositing**: POST /api/composite-fill endpoint uses sharp to produce correct 585x559px PNGs with transparency
 - Added AI generation mode using OpenAI gpt-image-1 for natural language clothing design
+- **AI prompt enhancement pipeline**: Two-stage system — GPT-4o-mini first enhances vague user prompts with Gen Alpha/Gen Z trending Roblox aesthetics (Y2K streetwear, hypebeast, dark academia, cyberpunk, anime, etc.), then feeds the enhanced description into the image generation prompt with region-specific R15 layout instructions
+- **Text/number sizing constraints**: AI prompts explicitly enforce that text, numbers, and logos must fit within 128x128px regions with padding — prevents overflow across template faces
+- **Region-aware prompts**: Torso TOP face explicitly marked as "folds under head" so AI never places important design elements there; main designs centered on FRONT and BACK squares only
 - Added freehand drawing mode with brush sizes and undo
 - Fixed PNG export to work on both web (download link) and mobile (photo library save)
-- Added prompt suggestion chips for AI mode
+- Updated prompt suggestion chips with Gen Alpha trending styles (Y2K, anime, dark academia, cyberpunk, etc.)

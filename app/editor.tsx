@@ -819,25 +819,25 @@ const uploadStyles = StyleSheet.create({
 function getPromptSuggestions(type: TemplateType): string[] {
   if (type === "shirt") {
     return [
-      "Red and black flannel plaid pattern",
-      "Galaxy nebula space pattern with stars",
-      "Military camouflage green pattern",
-      "Blue tie-dye swirl pattern",
-      "Tuxedo with black jacket and white shirt",
-      "Hawaiian tropical flowers on blue",
-      "Gold and black luxury pattern",
-      "Neon cyberpunk circuit board design",
+      "Oversized Y2K streetwear hoodie",
+      "Anime graphic tee with manga panels",
+      "Basketball jersey number 23",
+      "Dark academia plaid blazer layered look",
+      "Cyberpunk techwear with neon accents",
+      "Preppy old money polo with crest",
+      "Skater band tee vintage washed",
+      "Clean minimalist with small embroidered logo",
     ];
   }
   return [
-    "Blue denim jeans with pockets",
-    "Black leather pants with buckles",
-    "Military cargo pants with camo pattern",
-    "Red and white sporty track pants",
-    "Dark purple galaxy sweatpants",
-    "Classic khaki chinos",
-    "Neon green racing pants with stripes",
-    "Ripped distressed jeans look",
+    "Baggy Y2K cargo pants with chains",
+    "Ripped black jeans with stitching",
+    "Track pants with side stripes",
+    "Dark academia pleated trousers",
+    "Cyberpunk utility pants neon trim",
+    "Classic blue denim with faded wash",
+    "Preppy chinos cream colored",
+    "Skater jeans with paint splatter",
   ];
 }
 
