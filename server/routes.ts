@@ -238,18 +238,15 @@ TORSO (upper half of image):
 - BACK face: a large square to the far right, same size as front — Center the back design here (back graphic, number, etc.)
 - BOTTOM face: a wide short rectangle below center — bottom hem
 
-RIGHT ARM (bottom-left area):
-- Sleeve faces: several tall narrow rectangles side by side, with small squares above and below
-- Should match the torso's fabric/color — consistent sleeves
-
-LEFT ARM (bottom-right area):
-- Sleeve faces: several tall narrow rectangles side by side, with small squares above and below
-- Should mirror the right arm sleeve design
+ARMS — THE BOTTOM HALF of the image (sleeves):
+- Right arm sleeve (bottom-left): several tall narrow rectangles side by side, with small squares above and below. These are the RIGHT SLEEVE — they MUST be filled with the same fabric color/pattern as the torso. Do NOT leave them white or empty.
+- Left arm sleeve (bottom-right): mirrors the right arm. These are the LEFT SLEEVE — they MUST be filled with the same fabric color/pattern as the torso. Do NOT leave them white or empty.
 
 CRITICAL RULES:
-- Fill the ENTIRE 585x559 canvas with the shirt's base color/fabric — every pixel should be covered. NO white space, NO transparency, NO gaps between regions, NO visible borders or grid lines. The gaps between the template regions should be filled with the base shirt color.
+- Fill the ENTIRE 585x559 canvas with the shirt's base color/fabric — EVERY SINGLE PIXEL from top to bottom, left to right. The bottom half of the canvas is just as important as the top — it contains the sleeves. If the bottom half is white or empty, the character's arms will be white in-game.
+- NO white space, NO transparency, NO gaps between regions, NO visible borders or grid lines
 - The FRONT and BACK squares are the most important — center any logos, graphics, or key design elements within them
-- All regions should have consistent fabric color and pattern
+- The sleeve areas (bottom half) MUST have the same base color/pattern as the torso — they are part of the same shirt
 - TEXT LIMITED TO 2 WORDS MAX or a single number — AI cannot render longer text legibly
 - Use flat colors — no 3D shading, no shadows, no perspective
 - Do NOT draw outlines around regions — paint the design seamlessly across the whole canvas`;
@@ -269,15 +266,16 @@ WAIST/HIP — THE TOP HALF of the image (this is where the main design goes!):
 - BACK face: a large square to the far right of the top half, same size as front — Center back design here (back pockets, pattern)
 - BOTTOM face: a wide short rectangle below center — seat area
 
-LEGS — THE BOTTOM HALF of the image (NO main graphics here — legs only!):
-- Right leg (bottom-left): several tall narrow rectangles side by side, with small squares above and below. These are just the PANT LEGS — only fabric pattern, color, and subtle details like seams. NEVER put the main graphic, logo, or character art on the legs.
-- Left leg (bottom-right): mirrors the right leg design. Again, ONLY fabric/pattern here.
+LEGS — THE BOTTOM HALF of the image (pant legs only, no main graphics):
+- Right leg (bottom-left): several tall narrow rectangles side by side, with small squares above and below. These are the RIGHT PANT LEG — they MUST be filled with the same fabric color/pattern as the waist. Only fabric pattern, seams, and subtle details here. NEVER put the main graphic on the legs. Do NOT leave them white or empty.
+- Left leg (bottom-right): mirrors the right leg. These are the LEFT PANT LEG — they MUST be filled with the same fabric color/pattern as the waist. Do NOT leave them white or empty.
 
 CRITICAL RULES:
 - The MAIN DESIGN goes in the TOP HALF of the image (the waist/hip FRONT square). The BOTTOM HALF is just pant legs with matching fabric — NEVER put the primary graphic on the bottom half.
-- Fill the ENTIRE 585x559 canvas with the pants' base color/fabric — every pixel should be covered. NO white space, NO transparency, NO gaps between regions, NO visible borders or grid lines. The gaps between the template regions should be filled with the base pants color.
+- Fill the ENTIRE 585x559 canvas with the pants' base color/fabric — EVERY SINGLE PIXEL from top to bottom, left to right. The bottom half is just as important as the top — it contains the pant legs. If the bottom half is white or empty, the character's legs will be white in-game.
+- NO white space, NO transparency, NO gaps between regions, NO visible borders or grid lines
 - The FRONT and BACK squares in the TOP HALF are the most important — center any belt, pockets, or key design elements within them
-- All regions should have consistent fabric color and pattern
+- The leg areas (bottom half) MUST have the same base color/pattern as the waist — they are part of the same pants
 - TEXT LIMITED TO 2 WORDS MAX or a single number — AI cannot render longer text legibly
 - Use flat colors — no 3D shading, no shadows, no perspective
 - Do NOT draw outlines around regions — paint the design seamlessly across the whole canvas`;
