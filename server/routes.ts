@@ -222,54 +222,18 @@ GARMENT TYPE: ${type === "shirt" ? "shirt/top" : "pants/bottoms"}`
 }
 
 function buildTemplatePrompt(userPrompt: string, type: "shirt" | "pants"): string {
-  if (type === "shirt") {
-    return `Create a flat 2D clothing texture for a Roblox R15 SHIRT at exactly 585x559 pixels. The design is: ${userPrompt}
+  const garment = type === "shirt" ? "shirt" : "pair of pants";
+  return `Generate a flat, seamless fabric texture or pattern for a ${garment}. The design is: ${userPrompt}
 
-IMPORTANT: Paint the ENTIRE 585x559 canvas with the clothing design — do NOT leave transparent gaps, empty space, or visible borders between sections. Fill everything edge-to-edge with continuous color and pattern. The system will automatically crop the correct regions.
-
-The canvas represents an unwrapped shirt with these key areas:
-
-TORSO (upper-center area of the canvas):
-- The torso FRONT face is a 128x128 square near the center of the upper half. THIS IS THE MOST VISIBLE AREA — center the main design element here (logo, chest graphic, jersey number, buttons). The design element should be vertically and horizontally centered within this area with padding on all sides.
-- The torso BACK face is a 128x128 square to the right of the front. Center any back design here (back number, back graphic).
-- The TOP strip above the front face folds under the character's head and is barely visible — just continue the base color/pattern here, never put logos or text.
-- Side faces flank the front — continue the fabric pattern through them.
-
-ARMS (lower area of the canvas):
-- Right arm regions in the bottom-left, left arm regions in the bottom-right
-- Sleeves should match the torso's fabric/color
-
-RULES:
-- Fill the ENTIRE canvas with the clothing design — solid color, pattern, or fabric texture everywhere. NO transparency, NO gaps, NO empty areas, NO visible grid lines or borders between regions.
-- The design should be ONE continuous piece of clothing painted across the full canvas
-- Center logos, numbers, and key graphics on the FRONT face area (upper-center 128x128 square), with padding so they don't touch the edges
-- TEXT/NUMBERS: Must be compact — jersey numbers should be about 40-60% of the 128x128 area, never edge-to-edge. Keep 15-20px padding around text.
-- Use flat colors — no 3D shading, no perspective, no shadows
-- Make it vivid, clean, and game-ready`;
-  }
-
-  return `Create a flat 2D clothing texture for a Roblox R15 PANTS at exactly 585x559 pixels. The design is: ${userPrompt}
-
-IMPORTANT: Paint the ENTIRE 585x559 canvas with the clothing design — do NOT leave transparent gaps, empty space, or visible borders between sections. Fill everything edge-to-edge with continuous color and pattern. The system will automatically crop the correct regions.
-
-The canvas represents unwrapped pants with these key areas:
-
-WAIST/HIP (upper-center area of the canvas):
-- The waist FRONT face is a 128x128 square near the center of the upper half. THIS IS THE MOST VISIBLE AREA — center the main design here (fly, belt, front pockets, pattern). The design element should be vertically and horizontally centered within this area with padding on all sides.
-- The waist BACK face is a 128x128 square to the right of the front. Center back design here (back pockets, pattern).
-- The TOP strip above the front face folds under the upper body and is barely visible — just continue the base color/pattern here, never put important details.
-- Side faces flank the front — continue the fabric pattern through them.
-
-LEGS (lower area of the canvas):
-- Right leg regions in the bottom-left, left leg regions in the bottom-right
-- Pant legs should match the waist's fabric/color and show appropriate leg details (seams, stitching, etc.)
-
-RULES:
-- Fill the ENTIRE canvas with the clothing design — solid color, pattern, or fabric texture everywhere. NO transparency, NO gaps, NO empty areas, NO visible grid lines or borders between regions.
-- The design should be ONE continuous piece of clothing painted across the full canvas
-- Center belt, pockets, and key details on the FRONT face area (upper-center 128x128 square), with padding so they don't touch the edges
-- TEXT/NUMBERS: Must be compact and fit within a 128x128 area with 15-20px padding. Never overflow across areas.
-- Use flat colors — no 3D shading, no perspective, no shadows
+CRITICAL REQUIREMENTS:
+- Create a SINGLE continuous flat image that shows the fabric/pattern of the clothing
+- Fill the ENTIRE image edge-to-edge with the design — NO white space, NO transparency, NO borders, NO grid lines, NO empty areas, NO template outlines
+- This is just the FABRIC/PATTERN of the clothing laid flat — like looking at a piece of fabric on a table
+- If the design has a logo, graphic, or number: place it centered in the middle of the image, sized to about 30-40% of the image dimensions, with plenty of space around it
+- The rest of the image should be filled with the base fabric color/texture/pattern
+- Use flat colors only — no 3D rendering, no perspective, no shadows, no lighting effects
+- NO outlines of a body, NO t-shirt shape, NO clothing silhouette — just the raw fabric design
+- Make the pattern/colors seamless so they look good when cropped into smaller pieces
 - Make it vivid, clean, and game-ready`;
 }
 
