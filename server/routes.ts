@@ -230,24 +230,26 @@ This is an unwrapped clothing texture. It has rectangular regions that map onto 
 
 LAYOUT:
 
-TORSO — in the upper area of the image:
-- TOP face: a wide rectangle at the very top (y=8 to y=74, 66px tall) — THIS FOLDS UNDER THE HEAD. Fill with base color only. NEVER place any part of the main graphic here.
-- RIGHT side: a narrow rectangle at x=167 to x=231 (64px wide), y=74 to y=202
-- FRONT face: a 128x128 pixel square at x=231, y=74 (to x=359, y=202) — THIS IS THE MAIN VISIBLE AREA. The main chest graphic MUST fit entirely inside this 128x128px box. Center the design within it with padding. Do NOT let the graphic extend above y=74 or below y=202 or left of x=231 or right of x=359.
-- LEFT side: a narrow rectangle at x=359 to x=423 (64px wide), y=74 to y=202
-- BACK face: a 128x128 pixel square at x=423, y=74 (to x=551, y=202) — Center the back design within this box
-- BOTTOM face: a wide rectangle below the front face (y=202 to y=268) — bottom hem, fill with base color
+The image is divided into a 9-column by 4-row grid. Think of the whole canvas as 9 columns wide and 4 rows tall.
 
-ARMS — the LOWER portion of the image (roughly y=289 to y=549). These are JUST SLEEVES:
-- Right arm sleeve (bottom-left): several tall narrow rectangles. Fill with the same fabric color/pattern as the torso. These are sleeves — NO main graphics, NO logos, NO character art here. Just matching fabric.
-- Left arm sleeve (bottom-right): mirrors the right arm. Just matching fabric.
+ROW 1 (top row, about 12% of height): FOLD ZONE — fills under the character's head. Just paint base shirt color here. NEVER put the main graphic here.
+
+ROW 2 (about 12% to 36% of height) — THE MAIN TORSO ROW. This row has these columns left to right:
+- Columns 1-2: gap, fill with base color
+- Column 3: right side of torso (narrow)
+- Columns 4-5: ★ FRONT FACE — THIS IS WHERE THE MAIN CHEST GRAPHIC GOES ★ This is a small square about 22% wide and 23% tall. The main design (logo, character, graphic) must be SMALL ENOUGH to fit inside this square with padding. Keep the design compact.
+- Column 6: left side of torso (narrow)
+- Columns 7-8: ★ BACK FACE — same size as front ★ Put back design here.
+- Column 9: gap, fill with base color
+
+ROW 3 (about 36% to 48%): BOTTOM HEM — fill with base color.
+
+ROW 4 (about 52% to 98%, the whole bottom half): SLEEVES — fill these entirely with the same base fabric color/pattern as the torso. NO main graphic here. NO logos. Just matching sleeves.
 
 CRITICAL RULES:
-- The main graphic MUST fit inside the 128x128px FRONT face box (x=231, y=74 to x=359, y=202). This is NOT the center of the image — it is in the upper-left quadrant. If you center the graphic on the whole canvas, it will land on the arms, not the chest.
-- Fill the ENTIRE 585x559 canvas with the shirt's base color/fabric — EVERY SINGLE PIXEL from top to bottom. The bottom half contains the sleeves — fill them with matching fabric color/pattern, NOT with the main graphic.
-- NO white space, NO transparency, NO gaps between regions, NO visible borders or grid lines
-- The FRONT and BACK torso squares in the upper quarter are the most important — center any logos, graphics, or key design elements within them
-- The sleeve areas (bottom half) MUST have the same base COLOR and PATTERN as the torso but NO main graphic — they are part of the same shirt
+- The main graphic must be SMALL — it fits in a square that is only about 22% of the image width and 23% of the image height. It goes in the center-left area of ROW 2. If the graphic is too big, it will bleed into the fold zone, sides, or arms.
+- Fill the ENTIRE canvas with the shirt's base color/fabric. Every pixel must be covered. The bottom half is all sleeves — fill with matching fabric only.
+- NO white space, NO transparency, NO gaps, NO grid lines, NO borders between regions
 - TEXT LIMITED TO 2 WORDS MAX or a single number — AI cannot render longer text legibly
 - Use flat colors — no 3D shading, no shadows, no perspective
 - Do NOT draw outlines around regions — paint the design seamlessly across the whole canvas`;
@@ -259,24 +261,26 @@ This is an unwrapped clothing texture. It has rectangular regions that map onto 
 
 LAYOUT:
 
-WAIST/HIP — in the upper area of the image:
-- TOP face: a wide rectangle at the very top (y=8 to y=74, 66px tall) — THIS FOLDS UNDER THE UPPER BODY. Fill with base color only. NEVER place any part of the main graphic here.
-- RIGHT side: a narrow rectangle at x=167 to x=231 (64px wide), y=74 to y=202 — right hip
-- FRONT face: a 128x128 pixel square at x=231, y=74 (to x=359, y=202) — THIS IS THE MAIN VISIBLE AREA. The main waist design MUST fit entirely inside this 128x128px box. Center the design within it with padding. Do NOT let the graphic extend above y=74 or below y=202 or left of x=231 or right of x=359.
-- LEFT side: a narrow rectangle at x=359 to x=423 (64px wide), y=74 to y=202 — left hip
-- BACK face: a 128x128 pixel square at x=423, y=74 (to x=551, y=202) — Center back design (pockets, pattern) within this box
-- BOTTOM face: a wide rectangle below the front face (y=202 to y=268) — seat area, fill with base color
+The image is divided into a 9-column by 4-row grid. Think of the whole canvas as 9 columns wide and 4 rows tall.
 
-LEGS — the LOWER portion of the image (roughly y=289 to y=549). These are JUST PANT LEGS:
-- Right leg (bottom-left): several tall narrow rectangles. Fill with the same fabric color/pattern as the waist. These are pant legs — NO main graphics, NO logos here. Just matching fabric with seam/stitch details.
-- Left leg (bottom-right): mirrors the right leg. Just matching fabric.
+ROW 1 (top row, about 12% of height): FOLD ZONE — fills under the upper body. Just paint base pants color here. NEVER put the main graphic here.
+
+ROW 2 (about 12% to 36% of height) — THE MAIN WAIST ROW. This row has these columns left to right:
+- Columns 1-2: gap, fill with base color
+- Column 3: right hip (narrow)
+- Columns 4-5: ★ FRONT FACE — THIS IS WHERE THE MAIN WAIST DESIGN GOES ★ This is a small square about 22% wide and 23% tall. The main design (belt, fly, pockets, logo) must be SMALL ENOUGH to fit inside this square with padding. Keep the design compact.
+- Column 6: left hip (narrow)
+- Columns 7-8: ★ BACK FACE — same size as front ★ Put back pockets/design here.
+- Column 9: gap, fill with base color
+
+ROW 3 (about 36% to 48%): SEAT AREA — fill with base color.
+
+ROW 4 (about 52% to 98%, the whole bottom half): PANT LEGS — fill these entirely with the same base fabric color/pattern as the waist. NO main graphic here. NO logos. Just matching pant leg fabric.
 
 CRITICAL RULES:
-- The main design MUST fit inside the 128x128px FRONT face box (x=231, y=74 to x=359, y=202). This is NOT the center of the image — it is in the upper-left quadrant. If you center the graphic on the whole canvas, it will land on the legs, not the waist.
-- Fill the ENTIRE 585x559 canvas with the pants' base color/fabric — EVERY SINGLE PIXEL from top to bottom. The bottom half contains the pant legs — fill them with matching fabric color/pattern, NOT with the main graphic.
-- NO white space, NO transparency, NO gaps between regions, NO visible borders or grid lines
-- The FRONT and BACK squares in the upper quarter are the most important — center any belt, pockets, or key design elements within them
-- The leg areas (bottom half) MUST have the same base COLOR and PATTERN as the waist but NO main graphic — they are part of the same pants
+- The main graphic must be SMALL — it fits in a square that is only about 22% of the image width and 23% of the image height. It goes in the center-left area of ROW 2. If the graphic is too big, it will bleed into the fold zone, sides, or legs.
+- Fill the ENTIRE canvas with the pants' base color/fabric. Every pixel must be covered. The bottom half is all pant legs — fill with matching fabric only.
+- NO white space, NO transparency, NO gaps, NO grid lines, NO borders between regions
 - TEXT LIMITED TO 2 WORDS MAX or a single number — AI cannot render longer text legibly
 - Use flat colors — no 3D shading, no shadows, no perspective
 - Do NOT draw outlines around regions — paint the design seamlessly across the whole canvas`;
