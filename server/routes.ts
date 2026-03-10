@@ -261,25 +261,22 @@ This is an unwrapped clothing texture. It has rectangular regions that map onto 
 
 LAYOUT:
 
-WAIST/HIP (upper half of image):
+WAIST/HIP — THE TOP HALF of the image (this is where the main design goes!):
 - TOP face: a wide short rectangle centered near the top — folds under the upper body, barely visible. Just fill with base pants color, never put important details here.
 - RIGHT side: a tall narrow rectangle to the left of center — right hip
-- FRONT face: a large square in the center — THIS IS THE MAIN VISIBLE AREA. Center the main pants design here (fly, belt, front pockets, pattern). The main design should be centered both vertically and horizontally within this square with padding on all sides.
+- FRONT face: a large square in the center OF THE TOP HALF — THIS IS THE MAIN VISIBLE AREA. Any graphic, logo, or key design goes HERE in the TOP HALF of the image, not the bottom. Center the main design both vertically and horizontally within this square with padding on all sides.
 - LEFT side: a tall narrow rectangle to the right of center — left hip
-- BACK face: a large square to the far right, same size as front — Center back design here (back pockets, pattern)
+- BACK face: a large square to the far right of the top half, same size as front — Center back design here (back pockets, pattern)
 - BOTTOM face: a wide short rectangle below center — seat area
 
-RIGHT LEG (bottom-left area):
-- Leg faces: several tall narrow rectangles side by side, with small squares above and below
-- Should match the waist fabric/color with pant leg details
-
-LEFT LEG (bottom-right area):
-- Leg faces: several tall narrow rectangles side by side, with small squares above and below  
-- Should mirror the right leg design
+LEGS — THE BOTTOM HALF of the image (NO main graphics here — legs only!):
+- Right leg (bottom-left): several tall narrow rectangles side by side, with small squares above and below. These are just the PANT LEGS — only fabric pattern, color, and subtle details like seams. NEVER put the main graphic, logo, or character art on the legs.
+- Left leg (bottom-right): mirrors the right leg design. Again, ONLY fabric/pattern here.
 
 CRITICAL RULES:
+- The MAIN DESIGN goes in the TOP HALF of the image (the waist/hip FRONT square). The BOTTOM HALF is just pant legs with matching fabric — NEVER put the primary graphic on the bottom half.
 - Fill the ENTIRE 585x559 canvas with the pants' base color/fabric — every pixel should be covered. NO white space, NO transparency, NO gaps between regions, NO visible borders or grid lines. The gaps between the template regions should be filled with the base pants color.
-- The FRONT and BACK squares are the most important — center any belt, pockets, or key design elements within them
+- The FRONT and BACK squares in the TOP HALF are the most important — center any belt, pockets, or key design elements within them
 - All regions should have consistent fabric color and pattern
 - TEXT LIMITED TO 2 WORDS MAX or a single number — AI cannot render longer text legibly
 - Use flat colors — no 3D shading, no shadows, no perspective
