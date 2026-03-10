@@ -171,11 +171,11 @@ This is an UNWRAPPED TEXTURE MAP — a flat image where different rectangular re
 EXACT LAYOUT — draw the design ONLY in these rectangular regions:
 
 TORSO (upper half of image):
-- TORSO TOP face: centered near top, a wide short rectangle (shows top of shoulders)
+- TORSO TOP face: centered near top, a wide short rectangle — THIS FOLDS UNDER THE CHARACTER'S HEAD AND IS BARELY VISIBLE. Only fill with the base fabric color/pattern, NEVER place logos, numbers, text, or important design elements here.
 - TORSO RIGHT side: left of center, a tall rectangle (right side of the torso as seen from front)
-- TORSO FRONT: center, a large square — THIS IS THE MAIN VISIBLE AREA. Draw the primary shirt design here (chest, buttons, logo, main pattern)
+- TORSO FRONT: center, a large 128x128 square — THIS IS THE MAIN VISIBLE AREA. Center the primary shirt design ENTIRELY within this square only (chest, buttons, logo, main pattern). Do NOT let the design extend upward into the top face rectangle above.
 - TORSO LEFT side: right of center, a tall rectangle (left side of torso)  
-- TORSO BACK: far right area, a large square same size as front — Draw the back of the shirt here (back pattern, number, etc.)
+- TORSO BACK: far right area, a large 128x128 square same size as front — Center the back design ENTIRELY within this square (back pattern, number, etc.). Do NOT let it extend into the top rectangle.
 - TORSO BOTTOM face: below center, a wide short rectangle (bottom hem of shirt)
 
 RIGHT ARM (bottom-left area):
@@ -191,7 +191,8 @@ LEFT ARM (bottom-right area):
 CRITICAL RULES:
 - This is a FLAT TEXTURE MAP, not a 3D rendering
 - ALL regions must have the shirt design/pattern applied consistently
-- The FRONT and BACK torso squares are the most prominent — put the main design there
+- The FRONT and BACK torso squares are the most prominent — center logos, numbers, and key design elements WITHIN those squares only
+- The TOP face rectangle folds under the head — ONLY put base color/fabric there, never logos or text
 - Arm regions should have matching sleeves
 - No 3D shading, no perspective, no shadows
 - Transparent/empty background outside the clothing regions
@@ -205,11 +206,11 @@ This is an UNWRAPPED TEXTURE MAP — a flat image where different rectangular re
 EXACT LAYOUT — draw the design ONLY in these rectangular regions:
 
 TORSO/WAIST (upper half of image):
-- TORSO TOP face: centered near top, a wide short rectangle (waistband top)
+- TORSO TOP face: centered near top, a wide short rectangle — THIS FOLDS UNDER THE CHARACTER'S UPPER BODY AND IS BARELY VISIBLE. Only fill with the base fabric color/pattern (e.g. waistband color), NEVER place important design elements here.
 - TORSO RIGHT side: left of center, a tall rectangle (right hip)
-- TORSO FRONT: center, a large square — THIS IS THE MAIN VISIBLE AREA. Draw the main pants front here (fly, belt, pockets, main pattern)
+- TORSO FRONT: center, a large 128x128 square — THIS IS THE MAIN VISIBLE AREA. Center the main pants front design ENTIRELY within this square only (fly, belt, pockets, main pattern). Do NOT let the design extend upward into the top face rectangle above.
 - TORSO LEFT side: right of center, a tall rectangle (left hip)
-- TORSO BACK: far right area, a large square same size as front — Draw the back of the pants here (back pockets, pattern)
+- TORSO BACK: far right area, a large 128x128 square same size as front — Center the back design ENTIRELY within this square (back pockets, pattern). Do NOT let it extend into the top rectangle.
 - TORSO BOTTOM face: below center, a wide short rectangle (crotch/seat area)
 
 RIGHT LEG (bottom-left area):
@@ -225,7 +226,8 @@ LEFT LEG (bottom-right area):
 CRITICAL RULES:
 - This is a FLAT TEXTURE MAP, not a 3D rendering
 - ALL regions must have the pants design/pattern applied consistently
-- The FRONT and BACK torso squares are the most prominent — put the main waist/hip design there
+- The FRONT and BACK torso squares are the most prominent — center belt, pockets, and key design elements WITHIN those squares only
+- The TOP face rectangle folds under the upper body — ONLY put base color/fabric there, never important details
 - Leg regions should show matching pant legs (jeans seams, fabric texture, etc.)
 - The waist/torso area connects visually to the leg areas
 - No 3D shading, no perspective, no shadows
