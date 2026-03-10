@@ -232,22 +232,21 @@ LAYOUT:
 
 The image is divided into a 9-column by 4-row grid. Think of the whole canvas as 9 columns wide and 4 rows tall.
 
-ROW 1 (top row, about 12% of height): FOLD ZONE — fills under the character's head. Just paint base shirt color here. NEVER put the main graphic here.
+The layout has a VERY TOP-HEAVY design. The main graphic goes NEAR THE TOP of the image, not in the middle.
 
-ROW 2 (about 12% to 36% of height) — THE MAIN TORSO ROW. This row has these columns left to right:
-- Columns 1-2: gap, fill with base color
-- Column 3: right side of torso (narrow)
-- Columns 4-5: ★ FRONT FACE — THIS IS WHERE THE MAIN CHEST GRAPHIC GOES ★ This is a small square about 22% wide and 23% tall. The main design (logo, character, graphic) must be SMALL ENOUGH to fit inside this square with padding. Keep the design compact.
-- Column 6: left side of torso (narrow)
-- Columns 7-8: ★ BACK FACE — same size as front ★ Put back design here.
-- Column 9: gap, fill with base color
-
-ROW 3 (about 36% to 48%): BOTTOM HEM — fill with base color.
-
-ROW 4 (about 52% to 98%, the whole bottom half): SLEEVES — fill these entirely with the same base fabric color/pattern as the torso. NO main graphic here. NO logos. Just matching sleeves.
+TOP STRIP (top ~2% of image): tiny gap, fill with base color.
+FOLD ZONE (about 2% to 13%): folds under the character's head. Just paint base shirt color here. NEVER put the main graphic here.
+TORSO ROW (about 13% to 36%) — the main design row, positioned HIGH UP in the image:
+- Left third: gap and right side of torso (narrow), fill with base color
+- Center: ★ FRONT FACE ★ — a small square about 22% wide, positioned at roughly 40% from the left edge and 25% from the top. THIS is where the main chest graphic goes. The graphic must be SMALL — only about 22% of the image width. Keep it compact with padding inside this square.
+- Right of center: left side of torso (narrow), fill with base color
+- Far right: ★ BACK FACE ★ — same size square, about 72% from the left edge and 25% from the top. Put back design here.
+HEM (about 36% to 48%): fill with base color.
+SLEEVES (about 52% to 98%, the entire bottom half): fill with the same base fabric color/pattern as the torso. NO main graphic, NO logos. Just matching sleeve fabric.
 
 CRITICAL RULES:
-- The main graphic must be SMALL — it fits in a square that is only about 22% of the image width and 23% of the image height. It goes in the center-left area of ROW 2. If the graphic is too big, it will bleed into the fold zone, sides, or arms.
+- The main graphic goes HIGH UP — centered at about 25% from the TOP of the image and 40% from the left edge. It must NOT drift toward the middle or bottom of the canvas. If it does, it will end up on the arms instead of the chest.
+- The graphic must be SMALL — only about 22% of the image width and 23% tall. If too big, it bleeds into the fold, sides, or arms.
 - Fill the ENTIRE canvas with the shirt's base color/fabric. Every pixel must be covered. The bottom half is all sleeves — fill with matching fabric only.
 - NO white space, NO transparency, NO gaps, NO grid lines, NO borders between regions
 - TEXT LIMITED TO 2 WORDS MAX or a single number — AI cannot render longer text legibly
@@ -263,22 +262,21 @@ LAYOUT:
 
 The image is divided into a 9-column by 4-row grid. Think of the whole canvas as 9 columns wide and 4 rows tall.
 
-ROW 1 (top row, about 12% of height): FOLD ZONE — fills under the upper body. Just paint base pants color here. NEVER put the main graphic here.
+The layout has a VERY TOP-HEAVY design. The main graphic goes NEAR THE TOP of the image, not in the middle.
 
-ROW 2 (about 12% to 36% of height) — THE MAIN WAIST ROW. This row has these columns left to right:
-- Columns 1-2: gap, fill with base color
-- Column 3: right hip (narrow)
-- Columns 4-5: ★ FRONT FACE — THIS IS WHERE THE MAIN WAIST DESIGN GOES ★ This is a small square about 22% wide and 23% tall. The main design (belt, fly, pockets, logo) must be SMALL ENOUGH to fit inside this square with padding. Keep the design compact.
-- Column 6: left hip (narrow)
-- Columns 7-8: ★ BACK FACE — same size as front ★ Put back pockets/design here.
-- Column 9: gap, fill with base color
-
-ROW 3 (about 36% to 48%): SEAT AREA — fill with base color.
-
-ROW 4 (about 52% to 98%, the whole bottom half): PANT LEGS — fill these entirely with the same base fabric color/pattern as the waist. NO main graphic here. NO logos. Just matching pant leg fabric.
+TOP STRIP (top ~2% of image): tiny gap, fill with base color.
+FOLD ZONE (about 2% to 13%): folds under the upper body. Just paint base pants color here. NEVER put the main graphic here.
+WAIST ROW (about 13% to 36%) — the main design row, positioned HIGH UP in the image:
+- Left third: gap and right hip (narrow), fill with base color
+- Center: ★ FRONT FACE ★ — a small square about 22% wide, positioned at roughly 40% from the left edge and 25% from the top. THIS is where the main waist design goes (belt, fly, pockets). The graphic must be SMALL — only about 22% of the image width.
+- Right of center: left hip (narrow), fill with base color
+- Far right: ★ BACK FACE ★ — same size square, about 72% from the left edge and 25% from the top. Put back pockets/design here.
+SEAT (about 36% to 48%): fill with base color.
+PANT LEGS (about 52% to 98%, the entire bottom half): fill with the same base fabric color/pattern as the waist. NO main graphic, NO logos. Just matching pant leg fabric.
 
 CRITICAL RULES:
-- The main graphic must be SMALL — it fits in a square that is only about 22% of the image width and 23% of the image height. It goes in the center-left area of ROW 2. If the graphic is too big, it will bleed into the fold zone, sides, or legs.
+- The main graphic goes HIGH UP — centered at about 25% from the TOP of the image and 40% from the left edge. It must NOT drift toward the middle or bottom of the canvas.
+- The graphic must be SMALL — only about 22% of the image width and 23% tall. If too big, it bleeds into the fold, sides, or legs.
 - Fill the ENTIRE canvas with the pants' base color/fabric. Every pixel must be covered. The bottom half is all pant legs — fill with matching fabric only.
 - NO white space, NO transparency, NO gaps, NO grid lines, NO borders between regions
 - TEXT LIMITED TO 2 WORDS MAX or a single number — AI cannot render longer text legibly
