@@ -186,10 +186,11 @@ STYLE DEFAULTS — when the user doesn't specify an exact style, lean toward the
 - Sports jerseys / athletic wear (bold numbers, team-style stripes)
 
 TEXT RULES (CRITICAL):
-- If the design includes text, numbers, or lettering: specify that text must be SMALL and fit ENTIRELY within a 128x128 pixel square
-- Numbers on jerseys should be compact, not giant — think actual jersey proportions where the number takes up about 40-60% of the chest area
+- AI image generators are BAD at spelling long text. If the user wants text on the clothing, SHORTEN it to a maximum of 2 words or a single number. Pick the most impactful 1-2 words that capture the vibe.
+- Examples: "saying something crazy" → just describe the graphic style, skip the text. "jersey number 23" → keep "23". "Supreme style box logo" → keep "DRIP" or "HYPE" as the word.
+- Numbers on jerseys should be compact, not giant — about 40-60% of the chest area
 - Any text must use a font size that leaves padding/margins around it
-- NEVER let text or numbers overflow beyond a single face region
+- If the user's request is mainly about a phrase or quote, convert it into a VISUAL design concept instead (graphic, illustration, pattern) and skip the text entirely
 
 DESIGN RULES:
 - Keep patterns tileable/repeatable across regions when possible
@@ -229,7 +230,7 @@ CRITICAL REQUIREMENTS:
 - Create a SINGLE continuous flat image that shows the fabric/pattern of the clothing
 - Fill the ENTIRE image edge-to-edge with the design — NO white space, NO transparency, NO borders, NO grid lines, NO empty areas, NO template outlines
 - This is just the FABRIC/PATTERN of the clothing laid flat — like looking at a piece of fabric on a table
-- If the design has a logo, graphic, or number: place it centered in the middle of the image, sized to about 30-40% of the image dimensions, with plenty of space around it
+- If the design has a logo, graphic, or number: place it centered in the middle of the image, sized to about 30-40% of the image dimensions, with plenty of space around it. TEXT IS LIMITED TO 2 WORDS MAXIMUM or a single number — never render longer phrases or sentences.
 - The rest of the image should be filled with the base fabric color/texture/pattern
 - Use flat colors only — no 3D rendering, no perspective, no shadows, no lighting effects
 - NO outlines of a body, NO t-shirt shape, NO clothing silhouette — just the raw fabric design
