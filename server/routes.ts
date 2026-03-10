@@ -224,84 +224,66 @@ GARMENT TYPE: ${type === "shirt" ? "shirt/top" : "pants/bottoms"}`
 
 function buildTemplatePrompt(userPrompt: string, type: "shirt" | "pants"): string {
   if (type === "shirt") {
-    return `Create a flat 2D image at exactly 585x559 pixels for a Roblox shirt. The design is: ${userPrompt}
+    return `Create a flat 2D unwrapped texture map for a Roblox R15 SHIRT at exactly 585x559 pixels. The design is: ${userPrompt}
 
-The image contains 18 numbered rectangles arranged in a specific layout. Each rectangle is a face of the 3D character's body. Paint the clothing design INTO these rectangles at the EXACT pixel positions listed below.
+This is an unwrapped clothing texture. It has rectangular regions that map onto a blocky 3D character.
 
-UPPER SECTION — TORSO (the shirt body):
-Rectangle 1: x=231, y=8, 128x64px — Top of shoulders (folds under head, barely visible — just fill with base shirt color)
-Rectangle 2: x=165, y=74, 64x128px — Right side of torso
-Rectangle 3: x=231, y=74, 128x128px — ★ FRONT OF SHIRT (most visible!) — put main chest design here, centered
-Rectangle 4: x=361, y=74, 64x128px — Left side of torso
-Rectangle 5: x=427, y=74, 128x128px — ★ BACK OF SHIRT — put back design here (back number, etc.), centered
-Rectangle 6: x=231, y=204, 128x64px — Bottom hem of shirt
+LAYOUT:
 
-LOWER-LEFT — RIGHT ARM (right sleeve):
-Rectangle 7: x=217, y=289, 64x64px — Top of right arm
-Rectangle 8: x=19, y=355, 64x128px — Right arm outer face
-Rectangle 9: x=85, y=355, 64x128px — Right arm back face
-Rectangle 10: x=151, y=355, 64x128px — Right arm inner face
-Rectangle 11: x=217, y=355, 64x128px — Right arm front face
-Rectangle 12: x=217, y=485, 64x64px — Bottom of right arm
+TORSO (upper half of image):
+- TOP face: a wide short rectangle centered near the top — folds under the character's head, barely visible. Just fill with the base shirt color/pattern, never put important design elements here.
+- RIGHT side: a tall narrow rectangle to the left of center — right side of the torso
+- FRONT face: a large square in the center — THIS IS THE MAIN VISIBLE AREA. Center the primary shirt design here (chest graphic, logo, pattern). The main design should be centered both vertically and horizontally within this square with padding on all sides.
+- LEFT side: a tall narrow rectangle to the right of center — left side of the torso
+- BACK face: a large square to the far right, same size as front — Center the back design here (back graphic, number, etc.)
+- BOTTOM face: a wide short rectangle below center — bottom hem
 
-LOWER-RIGHT — LEFT ARM (left sleeve):
-Rectangle 13: x=308, y=289, 64x64px — Top of left arm
-Rectangle 14: x=308, y=355, 64x128px — Left arm front face
-Rectangle 15: x=374, y=355, 64x128px — Left arm inner face
-Rectangle 16: x=440, y=355, 64x128px — Left arm back face
-Rectangle 17: x=506, y=355, 64x128px — Left arm outer face
-Rectangle 18: x=308, y=485, 64x64px — Bottom of left arm
+RIGHT ARM (bottom-left area):
+- Sleeve faces: several tall narrow rectangles side by side, with small squares above and below
+- Should match the torso's fabric/color — consistent sleeves
+
+LEFT ARM (bottom-right area):
+- Sleeve faces: several tall narrow rectangles side by side, with small squares above and below
+- Should mirror the right arm sleeve design
 
 CRITICAL RULES:
-- Paint the clothing design INSIDE each rectangle at its exact pixel coordinates
-- Fill ALL empty space BETWEEN and AROUND rectangles with the base shirt color — NO white, NO transparency, NO gaps, NO grid lines, NO borders between rectangles
-- The entire 585x559 canvas should be covered in color — base fabric color everywhere, with the design details in the correct rectangles
-- Rectangle 3 (front) and Rectangle 5 (back) are the main visible areas — center any logos, graphics, or numbers there
-- All rectangles should have consistent fabric color/pattern
-- Sleeve rectangles (8-18) should match the torso's fabric
-- TEXT LIMITED TO 2 WORDS MAX or a single number
+- Fill the ENTIRE 585x559 canvas with the shirt's base color/fabric — every pixel should be covered. NO white space, NO transparency, NO gaps between regions, NO visible borders or grid lines. The gaps between the template regions should be filled with the base shirt color.
+- The FRONT and BACK squares are the most important — center any logos, graphics, or key design elements within them
+- All regions should have consistent fabric color and pattern
+- TEXT LIMITED TO 2 WORDS MAX or a single number — AI cannot render longer text legibly
 - Use flat colors — no 3D shading, no shadows, no perspective
-- Do NOT draw rectangle outlines or borders — just paint the design seamlessly`;
+- Do NOT draw outlines around regions — paint the design seamlessly across the whole canvas`;
   }
 
-  return `Create a flat 2D image at exactly 585x559 pixels for Roblox pants. The design is: ${userPrompt}
+  return `Create a flat 2D unwrapped texture map for a Roblox R15 PANTS at exactly 585x559 pixels. The design is: ${userPrompt}
 
-The image contains 18 numbered rectangles arranged in a specific layout. Each rectangle is a face of the 3D character's body. Paint the clothing design INTO these rectangles at the EXACT pixel positions listed below.
+This is an unwrapped clothing texture. It has rectangular regions that map onto a blocky 3D character's lower body.
 
-UPPER SECTION — WAIST/HIP (the pants waist area):
-Rectangle 1: x=231, y=8, 128x64px — Top of waistband (folds under upper body, barely visible — just fill with base pants color)
-Rectangle 2: x=165, y=74, 64x128px — Right hip
-Rectangle 3: x=231, y=74, 128x128px — ★ FRONT OF PANTS (most visible!) — put main design here (fly, belt, front pockets), centered
-Rectangle 4: x=361, y=74, 64x128px — Left hip
-Rectangle 5: x=427, y=74, 128x128px — ★ BACK OF PANTS — put back pockets/design here, centered
-Rectangle 6: x=231, y=204, 128x64px — Seat/crotch area
+LAYOUT:
 
-LOWER-LEFT — RIGHT LEG:
-Rectangle 7: x=217, y=289, 64x64px — Top of right leg
-Rectangle 8: x=19, y=355, 64x128px — Right leg outer face
-Rectangle 9: x=85, y=355, 64x128px — Right leg back face
-Rectangle 10: x=151, y=355, 64x128px — Right leg inner face
-Rectangle 11: x=217, y=355, 64x128px — Right leg front face
-Rectangle 12: x=217, y=485, 64x64px — Bottom of right leg
+WAIST/HIP (upper half of image):
+- TOP face: a wide short rectangle centered near the top — folds under the upper body, barely visible. Just fill with base pants color, never put important details here.
+- RIGHT side: a tall narrow rectangle to the left of center — right hip
+- FRONT face: a large square in the center — THIS IS THE MAIN VISIBLE AREA. Center the main pants design here (fly, belt, front pockets, pattern). The main design should be centered both vertically and horizontally within this square with padding on all sides.
+- LEFT side: a tall narrow rectangle to the right of center — left hip
+- BACK face: a large square to the far right, same size as front — Center back design here (back pockets, pattern)
+- BOTTOM face: a wide short rectangle below center — seat area
 
-LOWER-RIGHT — LEFT LEG:
-Rectangle 13: x=308, y=289, 64x64px — Top of left leg
-Rectangle 14: x=308, y=355, 64x128px — Left leg front face
-Rectangle 15: x=374, y=355, 64x128px — Left leg inner face
-Rectangle 16: x=440, y=355, 64x128px — Left leg back face
-Rectangle 17: x=506, y=355, 64x128px — Left leg outer face
-Rectangle 18: x=308, y=485, 64x64px — Bottom of left leg
+RIGHT LEG (bottom-left area):
+- Leg faces: several tall narrow rectangles side by side, with small squares above and below
+- Should match the waist fabric/color with pant leg details
+
+LEFT LEG (bottom-right area):
+- Leg faces: several tall narrow rectangles side by side, with small squares above and below  
+- Should mirror the right leg design
 
 CRITICAL RULES:
-- Paint the clothing design INSIDE each rectangle at its exact pixel coordinates
-- Fill ALL empty space BETWEEN and AROUND rectangles with the base pants color — NO white, NO transparency, NO gaps, NO grid lines, NO borders between rectangles
-- The entire 585x559 canvas should be covered in color — base fabric color everywhere, with the design details in the correct rectangles
-- Rectangle 3 (front) and Rectangle 5 (back) are the main visible areas — center any pockets, belt, or details there
-- All rectangles should have consistent fabric color/pattern
-- Leg rectangles (8-18) should match the waist's fabric with appropriate pant leg details
-- TEXT LIMITED TO 2 WORDS MAX or a single number
+- Fill the ENTIRE 585x559 canvas with the pants' base color/fabric — every pixel should be covered. NO white space, NO transparency, NO gaps between regions, NO visible borders or grid lines. The gaps between the template regions should be filled with the base pants color.
+- The FRONT and BACK squares are the most important — center any belt, pockets, or key design elements within them
+- All regions should have consistent fabric color and pattern
+- TEXT LIMITED TO 2 WORDS MAX or a single number — AI cannot render longer text legibly
 - Use flat colors — no 3D shading, no shadows, no perspective
-- Do NOT draw rectangle outlines or borders — just paint the design seamlessly`;
+- Do NOT draw outlines around regions — paint the design seamlessly across the whole canvas`;
 }
 
 async function generateDesignQuestions(userPrompt: string, type: "shirt" | "pants"): Promise<{ questions: Array<{ id: string; question: string; options: string[] }> }> {
