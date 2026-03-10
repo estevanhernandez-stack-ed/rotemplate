@@ -223,19 +223,85 @@ GARMENT TYPE: ${type === "shirt" ? "shirt/top" : "pants/bottoms"}`
 }
 
 function buildTemplatePrompt(userPrompt: string, type: "shirt" | "pants"): string {
-  const garment = type === "shirt" ? "shirt" : "pair of pants";
-  return `Generate a flat, seamless fabric texture or pattern for a ${garment}. The design is: ${userPrompt}
+  if (type === "shirt") {
+    return `Create a flat 2D image at exactly 585x559 pixels for a Roblox shirt. The design is: ${userPrompt}
 
-CRITICAL REQUIREMENTS:
-- Create a SINGLE continuous flat image that shows the fabric/pattern of the clothing
-- Fill the ENTIRE image edge-to-edge with the design — NO white space, NO transparency, NO borders, NO grid lines, NO empty areas, NO template outlines
-- This is just the FABRIC/PATTERN of the clothing laid flat — like looking at a piece of fabric on a table
-- If the design has a logo, graphic, or number: place it centered in the middle of the image, sized to about 30-40% of the image dimensions, with plenty of space around it. TEXT IS LIMITED TO 2 WORDS MAXIMUM or a single number — never render longer phrases or sentences.
-- The rest of the image should be filled with the base fabric color/texture/pattern
-- Use flat colors only — no 3D rendering, no perspective, no shadows, no lighting effects
-- NO outlines of a body, NO t-shirt shape, NO clothing silhouette — just the raw fabric design
-- Make the pattern/colors seamless so they look good when cropped into smaller pieces
-- Make it vivid, clean, and game-ready`;
+The image contains 18 numbered rectangles arranged in a specific layout. Each rectangle is a face of the 3D character's body. Paint the clothing design INTO these rectangles at the EXACT pixel positions listed below.
+
+UPPER SECTION — TORSO (the shirt body):
+Rectangle 1: x=231, y=8, 128x64px — Top of shoulders (folds under head, barely visible — just fill with base shirt color)
+Rectangle 2: x=165, y=74, 64x128px — Right side of torso
+Rectangle 3: x=231, y=74, 128x128px — ★ FRONT OF SHIRT (most visible!) — put main chest design here, centered
+Rectangle 4: x=361, y=74, 64x128px — Left side of torso
+Rectangle 5: x=427, y=74, 128x128px — ★ BACK OF SHIRT — put back design here (back number, etc.), centered
+Rectangle 6: x=231, y=204, 128x64px — Bottom hem of shirt
+
+LOWER-LEFT — RIGHT ARM (right sleeve):
+Rectangle 7: x=217, y=289, 64x64px — Top of right arm
+Rectangle 8: x=19, y=355, 64x128px — Right arm outer face
+Rectangle 9: x=85, y=355, 64x128px — Right arm back face
+Rectangle 10: x=151, y=355, 64x128px — Right arm inner face
+Rectangle 11: x=217, y=355, 64x128px — Right arm front face
+Rectangle 12: x=217, y=485, 64x64px — Bottom of right arm
+
+LOWER-RIGHT — LEFT ARM (left sleeve):
+Rectangle 13: x=308, y=289, 64x64px — Top of left arm
+Rectangle 14: x=308, y=355, 64x128px — Left arm front face
+Rectangle 15: x=374, y=355, 64x128px — Left arm inner face
+Rectangle 16: x=440, y=355, 64x128px — Left arm back face
+Rectangle 17: x=506, y=355, 64x128px — Left arm outer face
+Rectangle 18: x=308, y=485, 64x64px — Bottom of left arm
+
+CRITICAL RULES:
+- Paint the clothing design INSIDE each rectangle at its exact pixel coordinates
+- Fill ALL empty space BETWEEN and AROUND rectangles with the base shirt color — NO white, NO transparency, NO gaps, NO grid lines, NO borders between rectangles
+- The entire 585x559 canvas should be covered in color — base fabric color everywhere, with the design details in the correct rectangles
+- Rectangle 3 (front) and Rectangle 5 (back) are the main visible areas — center any logos, graphics, or numbers there
+- All rectangles should have consistent fabric color/pattern
+- Sleeve rectangles (8-18) should match the torso's fabric
+- TEXT LIMITED TO 2 WORDS MAX or a single number
+- Use flat colors — no 3D shading, no shadows, no perspective
+- Do NOT draw rectangle outlines or borders — just paint the design seamlessly`;
+  }
+
+  return `Create a flat 2D image at exactly 585x559 pixels for Roblox pants. The design is: ${userPrompt}
+
+The image contains 18 numbered rectangles arranged in a specific layout. Each rectangle is a face of the 3D character's body. Paint the clothing design INTO these rectangles at the EXACT pixel positions listed below.
+
+UPPER SECTION — WAIST/HIP (the pants waist area):
+Rectangle 1: x=231, y=8, 128x64px — Top of waistband (folds under upper body, barely visible — just fill with base pants color)
+Rectangle 2: x=165, y=74, 64x128px — Right hip
+Rectangle 3: x=231, y=74, 128x128px — ★ FRONT OF PANTS (most visible!) — put main design here (fly, belt, front pockets), centered
+Rectangle 4: x=361, y=74, 64x128px — Left hip
+Rectangle 5: x=427, y=74, 128x128px — ★ BACK OF PANTS — put back pockets/design here, centered
+Rectangle 6: x=231, y=204, 128x64px — Seat/crotch area
+
+LOWER-LEFT — RIGHT LEG:
+Rectangle 7: x=217, y=289, 64x64px — Top of right leg
+Rectangle 8: x=19, y=355, 64x128px — Right leg outer face
+Rectangle 9: x=85, y=355, 64x128px — Right leg back face
+Rectangle 10: x=151, y=355, 64x128px — Right leg inner face
+Rectangle 11: x=217, y=355, 64x128px — Right leg front face
+Rectangle 12: x=217, y=485, 64x64px — Bottom of right leg
+
+LOWER-RIGHT — LEFT LEG:
+Rectangle 13: x=308, y=289, 64x64px — Top of left leg
+Rectangle 14: x=308, y=355, 64x128px — Left leg front face
+Rectangle 15: x=374, y=355, 64x128px — Left leg inner face
+Rectangle 16: x=440, y=355, 64x128px — Left leg back face
+Rectangle 17: x=506, y=355, 64x128px — Left leg outer face
+Rectangle 18: x=308, y=485, 64x64px — Bottom of left leg
+
+CRITICAL RULES:
+- Paint the clothing design INSIDE each rectangle at its exact pixel coordinates
+- Fill ALL empty space BETWEEN and AROUND rectangles with the base pants color — NO white, NO transparency, NO gaps, NO grid lines, NO borders between rectangles
+- The entire 585x559 canvas should be covered in color — base fabric color everywhere, with the design details in the correct rectangles
+- Rectangle 3 (front) and Rectangle 5 (back) are the main visible areas — center any pockets, belt, or details there
+- All rectangles should have consistent fabric color/pattern
+- Leg rectangles (8-18) should match the waist's fabric with appropriate pant leg details
+- TEXT LIMITED TO 2 WORDS MAX or a single number
+- Use flat colors — no 3D shading, no shadows, no perspective
+- Do NOT draw rectangle outlines or borders — just paint the design seamlessly`;
 }
 
 async function generateDesignQuestions(userPrompt: string, type: "shirt" | "pants"): Promise<{ questions: Array<{ id: string; question: string; options: string[] }> }> {
