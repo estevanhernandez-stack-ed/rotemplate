@@ -11,6 +11,7 @@ import {
   TextInput,
   Modal,
   Linking,
+  PanResponder,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -66,7 +67,11 @@ export default function EditorScreen() {
   const [aiScale, setAiScale] = useState(1.0);
   const [isRescaling, setIsRescaling] = useState(false);
   const [canvasBackgroundImage, setCanvasBackgroundImage] = useState<string | null>(null);
+  const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isEyedropping, setIsEyedropping] = useState(false);
   const [showUploadGuide, setShowUploadGuide] = useState(false);
+  const previewWidthRef = useRef(300);
 
   type InterviewQuestion = { id: string; question: string; options: string[] };
   const [interviewQuestions, setInterviewQuestions] = useState<InterviewQuestion[]>([]);
@@ -268,6 +273,8 @@ export default function EditorScreen() {
         setAiImageBase64(data.image);
         setGenerationId(data.generationId || null);
         setAiScale(1.0);
+        setImageOffset({ x: 0, y: 0 });
+        setDragOffset({ x: 0, y: 0 });
         setCanvasBackgroundImage(null);
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -302,6 +309,8 @@ export default function EditorScreen() {
         setAiImageBase64(data.image);
         setGenerationId(data.generationId || null);
         setAiScale(1.0);
+        setImageOffset({ x: 0, y: 0 });
+        setDragOffset({ x: 0, y: 0 });
         setCanvasBackgroundImage(null);
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -317,9 +326,10 @@ export default function EditorScreen() {
     }
   }, [aiPrompt, templateType]);
 
-  const handleRescale = useCallback(async (newScale: number) => {
+  const handleRescale = useCallback(async (newScale: number, offset?: { x: number; y: number }) => {
     if (!generationId) return;
     setAiScale(newScale);
+    const appliedOffset = offset ?? imageOffset;
     if (rescaleTimerRef.current) clearTimeout(rescaleTimerRef.current);
     rescaleTimerRef.current = setTimeout(async () => {
       try {
@@ -327,6 +337,8 @@ export default function EditorScreen() {
         const res = await apiRequest("POST", "/api/rescale-template", {
           generationId,
           scale: newScale,
+          offsetX: appliedOffset.x,
+          offsetY: appliedOffset.y,
         });
         const data = await res.json();
         if (data.image) {
@@ -339,7 +351,27 @@ export default function EditorScreen() {
         setIsRescaling(false);
       }
     }, 300);
-  }, [generationId]);
+  }, [generationId, imageOffset]);
+
+  const previewDragResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => !!generationId && !isRescaling,
+    onMoveShouldSetPanResponder: () => !!generationId && !isRescaling,
+    onPanResponderMove: (_, gs) => {
+      setDragOffset({ x: gs.dx, y: gs.dy });
+    },
+    onPanResponderRelease: (_, gs) => {
+      const pw = previewWidthRef.current;
+      const scaleToTemplate = TEMPLATE_WIDTH / pw;
+      const newOffset = {
+        x: imageOffset.x + Math.round(gs.dx * scaleToTemplate),
+        y: imageOffset.y + Math.round(gs.dy * scaleToTemplate),
+      };
+      setImageOffset(newOffset);
+      setDragOffset({ x: 0, y: 0 });
+      handleRescale(aiScale, newOffset);
+    },
+    onPanResponderTerminate: () => setDragOffset({ x: 0, y: 0 }),
+  }), [generationId, isRescaling, imageOffset, aiScale, handleRescale]);
 
   const handleEditWithDraw = useCallback(() => {
     if (!aiImageBase64) return;
@@ -347,6 +379,27 @@ export default function EditorScreen() {
     setStrokes([]);
     setMode("draw");
   }, [aiImageBase64]);
+
+  const handleEyedrop = useCallback(async (pixelX: number, pixelY: number) => {
+    if (!canvasBackgroundImage) return;
+    try {
+      const res = await apiRequest("POST", "/api/sample-color", {
+        image: canvasBackgroundImage,
+        x: Math.max(0, Math.min(TEMPLATE_WIDTH - 1, Math.round(pixelX))),
+        y: Math.max(0, Math.min(TEMPLATE_HEIGHT - 1, Math.round(pixelY))),
+      });
+      const data = await res.json();
+      if (data.color) {
+        setSelectedColor(data.color);
+        setIsEyedropping(false);
+        if (Platform.OS !== "web") {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      }
+    } catch (err) {
+      console.error("Eyedrop error:", err);
+    }
+  }, [canvasBackgroundImage]);
 
   const downloadBase64 = useCallback(
     async (base64: string) => {
@@ -402,13 +455,18 @@ export default function EditorScreen() {
     try {
       setIsSaving(true);
 
-      if (canvasBackgroundImage && strokes.length > 0) {
-        const captured = await captureRef(exportRef, {
-          format: "png",
-          quality: 1,
-          result: "base64",
+      if (canvasBackgroundImage) {
+        const res = await apiRequest("POST", "/api/export-ai-draw", {
+          baseImage: canvasBackgroundImage,
+          strokes,
+          templateType,
         });
-        await downloadBase64(captured);
+        const data = await res.json();
+        if (data.image) {
+          await downloadBase64(data.image);
+        } else {
+          Alert.alert("Error", data.error || "Failed to export.");
+        }
       } else if (aiImageBase64) {
         await downloadBase64(aiImageBase64);
       } else {
@@ -543,6 +601,21 @@ export default function EditorScreen() {
                 </Pressable>
               ))}
             </View>
+            {canvasBackgroundImage && (
+              <Pressable
+                onPress={() => setIsEyedropping((v) => !v)}
+                style={({ pressed }) => [
+                  styles.undoBtn,
+                  (pressed || isEyedropping) && styles.brushBtnActive,
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name="eyedropper"
+                  size={20}
+                  color={isEyedropping ? "#fff" : Colors.light.tint}
+                />
+              </Pressable>
+            )}
             <Pressable
               onPress={handleUndo}
               disabled={strokes.length === 0}
@@ -600,6 +673,8 @@ export default function EditorScreen() {
             onStrokeMove={handleStrokeMove}
             onStrokeEnd={handleStrokeEnd}
             backgroundImage={canvasBackgroundImage}
+            isEyedropping={isEyedropping}
+            onEyedrop={handleEyedrop}
           />
         )}
 
@@ -721,7 +796,11 @@ export default function EditorScreen() {
                 </Text>
                 <View style={styles.aiPreviewWrapper}>
                   {Platform.OS === "web" ? (
-                    <View style={styles.checkerboardBg}>
+                    <View
+                      style={styles.checkerboardBg}
+                      onLayout={(e) => { previewWidthRef.current = e.nativeEvent.layout.width; }}
+                      {...previewDragResponder.panHandlers}
+                    >
                       {isRescaling && (
                         <View style={styles.rescalingOverlay}>
                           <ActivityIndicator size="small" color="#00BCD4" />
@@ -736,14 +815,22 @@ export default function EditorScreen() {
                           borderRadius: 8,
                           imageRendering: "pixelated" as any,
                           opacity: isRescaling ? 0.5 : 1,
-                        }}
+                          transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
+                          transition: dragOffset.x === 0 && dragOffset.y === 0 ? "transform 0.2s" : "none",
+                          cursor: "grab",
+                        } as any}
                         alt="Generated template"
+                        draggable={false}
                       />
                     </View>
                   ) : (
-                    <View style={styles.aiPreviewImage}>
+                    <View
+                      style={styles.aiPreviewImage}
+                      onLayout={(e) => { previewWidthRef.current = e.nativeEvent.layout.width; }}
+                      {...previewDragResponder.panHandlers}
+                    >
                       <Text style={styles.aiPreviewNote}>
-                        Template ready! Use the controls below to adjust, then tap download or Edit with Draw.
+                        Template ready! Drag to reposition, use controls below to resize, then tap download or Edit with Draw.
                       </Text>
                     </View>
                   )}

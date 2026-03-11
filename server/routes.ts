@@ -74,16 +74,27 @@ const PANTS_REGIONS: Region[] = [
 
 async function compositeToTemplate(
   imageBase64: string,
-  templateType: "shirt" | "pants"
+  templateType: "shirt" | "pants",
+  offsetX = 0,
+  offsetY = 0
 ): Promise<string> {
   const regions = templateType === "pants" ? PANTS_REGIONS : SHIRT_REGIONS;
   const imageBuffer = Buffer.from(imageBase64, "base64");
 
-  const resizedBuffer = await sharp(imageBuffer)
+  let resizedBuffer = await sharp(imageBuffer)
     .resize(TEMPLATE_WIDTH, TEMPLATE_HEIGHT, { fit: "cover", position: "center" })
     .ensureAlpha()
     .png()
     .toBuffer();
+
+  if (offsetX !== 0 || offsetY !== 0) {
+    resizedBuffer = await sharp({
+      create: { width: TEMPLATE_WIDTH, height: TEMPLATE_HEIGHT, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+    })
+      .composite([{ input: resizedBuffer, left: Math.round(offsetX), top: Math.round(offsetY) }])
+      .png()
+      .toBuffer();
+  }
 
   const composites: sharp.OverlayOptions[] = [];
   for (const region of regions) {
@@ -427,9 +438,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/export-ai-draw", async (req: Request, res: Response) => {
+    try {
+      const { baseImage, strokes, templateType } = req.body;
+      const type = templateType === "pants" ? "pants" : "shirt";
+      const regions = type === "pants" ? PANTS_REGIONS : SHIRT_REGIONS;
+      const baseBuffer = Buffer.from(baseImage, "base64");
+      if (!strokes || strokes.length === 0) {
+        return res.json({ image: baseImage });
+      }
+      const clipRects = regions.map((r) => `<rect x="${r.x}" y="${r.y}" width="${r.width}" height="${r.height}"/>`).join("");
+      const paths = strokes.map((s: any) =>
+        `<path d="${s.path}" stroke="${s.color}" stroke-width="${s.width}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`
+      ).join("");
+      const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="${TEMPLATE_WIDTH}" height="${TEMPLATE_HEIGHT}"><defs><clipPath id="c">${clipRects}</clipPath></defs><g clip-path="url(#c)">${paths}</g></svg>`;
+      const result = await sharp(baseBuffer)
+        .composite([{ input: Buffer.from(svgStr, "utf8"), top: 0, left: 0 }])
+        .png()
+        .toBuffer();
+      res.json({ image: result.toString("base64") });
+    } catch (error: any) {
+      console.error("Error exporting AI+draw:", error);
+      res.status(500).json({ error: error?.message || "Export failed" });
+    }
+  });
+
+  app.post("/api/sample-color", async (req: Request, res: Response) => {
+    try {
+      const { image, x, y } = req.body;
+      const imageBuffer = Buffer.from(image, "base64");
+      const px = Math.max(0, Math.round(x));
+      const py = Math.max(0, Math.round(y));
+      const pixel = await sharp(imageBuffer)
+        .extract({ left: px, top: py, width: 1, height: 1 })
+        .raw()
+        .toBuffer();
+      const r = pixel[0].toString(16).padStart(2, "0");
+      const g = pixel[1].toString(16).padStart(2, "0");
+      const b = pixel[2].toString(16).padStart(2, "0");
+      res.json({ color: `#${r}${g}${b}` });
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "Sampling failed" });
+    }
+  });
+
   app.post("/api/rescale-template", async (req: Request, res: Response) => {
     try {
-      const { generationId, scale } = req.body;
+      const { generationId, scale, offsetX = 0, offsetY = 0 } = req.body;
       if (!generationId || typeof scale !== "number") {
         return res.status(400).json({ error: "generationId and scale required" });
       }
@@ -469,7 +524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         processedRaw = rawBuffer;
       }
-      const compositedImage = await compositeToTemplate(processedRaw.toString("base64"), entry.type);
+      const compositedImage = await compositeToTemplate(processedRaw.toString("base64"), entry.type, offsetX, offsetY);
       res.json({ image: compositedImage });
     } catch (error: any) {
       console.error("Error rescaling template:", error);

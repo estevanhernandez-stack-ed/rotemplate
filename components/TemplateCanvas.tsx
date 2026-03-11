@@ -27,6 +27,8 @@ interface TemplateCanvasProps {
   onStrokeMove: (x: number, y: number) => void;
   onStrokeEnd: () => void;
   backgroundImage?: string | null;
+  isEyedropping?: boolean;
+  onEyedrop?: (x: number, y: number) => void;
 }
 
 export default function TemplateCanvas({
@@ -42,6 +44,8 @@ export default function TemplateCanvas({
   onStrokeMove,
   onStrokeEnd,
   backgroundImage,
+  isEyedropping,
+  onEyedrop,
 }: TemplateCanvasProps) {
   const screenWidth = Dimensions.get("window").width;
   const canvasWidth = screenWidth - 32;
@@ -176,6 +180,17 @@ export default function TemplateCanvas({
             />
           );
         })}
+
+      {isEyedropping && backgroundImage && onEyedrop && (
+        <Pressable
+          style={[StyleSheet.absoluteFillObject, { zIndex: 99, cursor: "crosshair" as any }]}
+          onPress={(e) => {
+            const x = e.nativeEvent.locationX / scale;
+            const y = e.nativeEvent.locationY / scale;
+            onEyedrop(x, y);
+          }}
+        />
+      )}
     </View>
   );
 }
