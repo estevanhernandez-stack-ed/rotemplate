@@ -8,6 +8,17 @@ const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
+const rawImageStore = new Map<string, { raw: string; type: "shirt" | "pants"; expires: number }>();
+const RAW_IMAGE_TTL = 30 * 60 * 1000;
+
+function cleanupRawImages() {
+  const now = Date.now();
+  for (const [id, entry] of rawImageStore) {
+    if (entry.expires < now) rawImageStore.delete(id);
+  }
+}
+setInterval(cleanupRawImages, 5 * 60 * 1000);
+
 const TEMPLATE_WIDTH = 585;
 const TEMPLATE_HEIGHT = 559;
 
@@ -403,13 +414,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "No image data returned" });
       }
 
+      const generationId = `gen_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      rawImageStore.set(generationId, { raw: b64, type, expires: Date.now() + RAW_IMAGE_TTL });
+
       const compositedImage = await compositeToTemplate(b64, type);
 
-      res.json({ image: compositedImage });
+      res.json({ image: compositedImage, generationId });
     } catch (error: any) {
       console.error("Error generating template:", error);
       const message = error?.message || "Failed to generate image";
       res.status(500).json({ error: message });
+    }
+  });
+
+  app.post("/api/rescale-template", async (req: Request, res: Response) => {
+    try {
+      const { generationId, scale } = req.body;
+      if (!generationId || typeof scale !== "number") {
+        return res.status(400).json({ error: "generationId and scale required" });
+      }
+      const entry = rawImageStore.get(generationId);
+      if (!entry) {
+        return res.status(404).json({ error: "Generation expired or not found" });
+      }
+      const clampedScale = Math.max(0.4, Math.min(2.0, scale));
+      let processedRaw: Buffer;
+      const rawBuffer = Buffer.from(entry.raw, "base64");
+      const meta = await sharp(rawBuffer).metadata();
+      const w = meta.width || 1024;
+      const h = meta.height || 1024;
+      if (clampedScale < 1) {
+        const newW = Math.round(w * clampedScale);
+        const newH = Math.round(h * clampedScale);
+        const shrunk = await sharp(rawBuffer).resize(newW, newH).toBuffer();
+        processedRaw = await sharp({
+          create: { width: w, height: h, channels: 4, background: { r: 200, g: 200, b: 200, alpha: 255 } },
+        })
+          .composite([{ input: shrunk, left: Math.round((w - newW) / 2), top: Math.round((h - newH) / 2) }])
+          .png()
+          .toBuffer();
+      } else if (clampedScale > 1) {
+        const newW = Math.round(w * clampedScale);
+        const newH = Math.round(h * clampedScale);
+        processedRaw = await sharp(rawBuffer)
+          .resize(newW, newH)
+          .extract({
+            left: Math.round((newW - w) / 2),
+            top: Math.round((newH - h) / 2),
+            width: w,
+            height: h,
+          })
+          .png()
+          .toBuffer();
+      } else {
+        processedRaw = rawBuffer;
+      }
+      const compositedImage = await compositeToTemplate(processedRaw.toString("base64"), entry.type);
+      res.json({ image: compositedImage });
+    } catch (error: any) {
+      console.error("Error rescaling template:", error);
+      res.status(500).json({ error: error?.message || "Rescaling failed" });
     }
   });
 

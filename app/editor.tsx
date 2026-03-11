@@ -55,12 +55,17 @@ export default function EditorScreen() {
   const [mode, setMode] = useState<EditorMode>("fill");
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [brushSize, setBrushSize] = useState(5);
+  const rescaleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentPathRef = useRef<string[]>([]);
   const exportRef = useRef<View>(null);
 
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiImageBase64, setAiImageBase64] = useState<string | null>(null);
+  const [generationId, setGenerationId] = useState<string | null>(null);
+  const [aiScale, setAiScale] = useState(1.0);
+  const [isRescaling, setIsRescaling] = useState(false);
+  const [canvasBackgroundImage, setCanvasBackgroundImage] = useState<string | null>(null);
   const [showUploadGuide, setShowUploadGuide] = useState(false);
 
   type InterviewQuestion = { id: string; question: string; options: string[] };
@@ -261,6 +266,9 @@ export default function EditorScreen() {
 
       if (data.image) {
         setAiImageBase64(data.image);
+        setGenerationId(data.generationId || null);
+        setAiScale(1.0);
+        setCanvasBackgroundImage(null);
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
@@ -292,6 +300,9 @@ export default function EditorScreen() {
 
       if (data.image) {
         setAiImageBase64(data.image);
+        setGenerationId(data.generationId || null);
+        setAiScale(1.0);
+        setCanvasBackgroundImage(null);
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
@@ -305,6 +316,37 @@ export default function EditorScreen() {
       setAiLoading(false);
     }
   }, [aiPrompt, templateType]);
+
+  const handleRescale = useCallback(async (newScale: number) => {
+    if (!generationId) return;
+    setAiScale(newScale);
+    if (rescaleTimerRef.current) clearTimeout(rescaleTimerRef.current);
+    rescaleTimerRef.current = setTimeout(async () => {
+      try {
+        setIsRescaling(true);
+        const res = await apiRequest("POST", "/api/rescale-template", {
+          generationId,
+          scale: newScale,
+        });
+        const data = await res.json();
+        if (data.image) {
+          setAiImageBase64(data.image);
+          setCanvasBackgroundImage(null);
+        }
+      } catch (err) {
+        console.error("Rescale error:", err);
+      } finally {
+        setIsRescaling(false);
+      }
+    }, 300);
+  }, [generationId]);
+
+  const handleEditWithDraw = useCallback(() => {
+    if (!aiImageBase64) return;
+    setCanvasBackgroundImage(aiImageBase64);
+    setStrokes([]);
+    setMode("draw");
+  }, [aiImageBase64]);
 
   const downloadBase64 = useCallback(
     async (base64: string) => {
@@ -360,7 +402,14 @@ export default function EditorScreen() {
     try {
       setIsSaving(true);
 
-      if (aiImageBase64) {
+      if (canvasBackgroundImage && strokes.length > 0) {
+        const captured = await captureRef(exportRef, {
+          format: "png",
+          quality: 1,
+          result: "base64",
+        });
+        await downloadBase64(captured);
+      } else if (aiImageBase64) {
         await downloadBase64(aiImageBase64);
       } else {
         const res = await apiRequest("POST", "/api/composite-fill", {
@@ -382,7 +431,7 @@ export default function EditorScreen() {
     } finally {
       setIsSaving(false);
     }
-  }, [mediaPermission, templateType, aiImageBase64, colorMap, strokes, downloadBase64]);
+  }, [mediaPermission, templateType, aiImageBase64, canvasBackgroundImage, colorMap, strokes, downloadBase64, exportRef]);
 
   const filledCount = Object.values(colorMap).filter(
     (c) => c && c !== "transparent"
@@ -537,7 +586,7 @@ export default function EditorScreen() {
           </View>
         )}
 
-        {mode !== "ai" && (
+        {(mode !== "ai" || canvasBackgroundImage) && (
           <TemplateCanvas
             regions={regions}
             colorMap={colorMap}
@@ -550,6 +599,7 @@ export default function EditorScreen() {
             onStrokeStart={handleStrokeStart}
             onStrokeMove={handleStrokeMove}
             onStrokeEnd={handleStrokeEnd}
+            backgroundImage={canvasBackgroundImage}
           />
         )}
 
@@ -664,7 +714,7 @@ export default function EditorScreen() {
               </View>
             )}
 
-            {aiImageBase64 && (
+            {aiImageBase64 && !canvasBackgroundImage && (
               <View style={styles.aiPreviewContainer}>
                 <Text style={styles.aiPreviewLabel}>
                   Template Preview ({TEMPLATE_WIDTH}x{TEMPLATE_HEIGHT}px)
@@ -672,6 +722,11 @@ export default function EditorScreen() {
                 <View style={styles.aiPreviewWrapper}>
                   {Platform.OS === "web" ? (
                     <View style={styles.checkerboardBg}>
+                      {isRescaling && (
+                        <View style={styles.rescalingOverlay}>
+                          <ActivityIndicator size="small" color="#00BCD4" />
+                        </View>
+                      )}
                       <img
                         src={`data:image/png;base64,${aiImageBase64}`}
                         style={{
@@ -680,6 +735,7 @@ export default function EditorScreen() {
                           aspectRatio: `${TEMPLATE_WIDTH}/${TEMPLATE_HEIGHT}`,
                           borderRadius: 8,
                           imageRendering: "pixelated" as any,
+                          opacity: isRescaling ? 0.5 : 1,
                         }}
                         alt="Generated template"
                       />
@@ -687,17 +743,60 @@ export default function EditorScreen() {
                   ) : (
                     <View style={styles.aiPreviewImage}>
                       <Text style={styles.aiPreviewNote}>
-                        Template ready! Tap the download button above to save the {TEMPLATE_WIDTH}x{TEMPLATE_HEIGHT}px PNG for Roblox upload.
+                        Template ready! Use the controls below to adjust, then tap download or Edit with Draw.
                       </Text>
                     </View>
                   )}
                 </View>
+
+                {generationId && (
+                  <View style={styles.scaleControlRow}>
+                    <Text style={styles.scaleLabel}>Size</Text>
+                    {[0.6, 0.75, 0.9, 1.0, 1.15, 1.3].map((s) => (
+                      <Pressable
+                        key={s}
+                        onPress={() => handleRescale(s)}
+                        disabled={isRescaling}
+                        style={[
+                          styles.scaleBtn,
+                          Math.abs(aiScale - s) < 0.01 && styles.scaleBtnActive,
+                          isRescaling && styles.disabledBtn,
+                        ]}
+                      >
+                        <Text style={[
+                          styles.scaleBtnText,
+                          Math.abs(aiScale - s) < 0.01 && styles.scaleBtnTextActive,
+                        ]}>
+                          {s === 1.0 ? "1×" : s < 1 ? `${Math.round(s * 100)}%` : `${Math.round(s * 100)}%`}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+
+                <Pressable
+                  onPress={handleEditWithDraw}
+                  style={({ pressed }) => [styles.editWithDrawBtn, pressed && styles.btnPressed]}
+                >
+                  <Ionicons name="brush" size={16} color="#00BCD4" />
+                  <Text style={styles.editWithDrawText}>Edit with Draw</Text>
+                </Pressable>
+
                 <View style={styles.aiInfoRow}>
                   <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
                   <Text style={styles.aiInfoText}>
                     Ready for Roblox! This is a properly formatted {TEMPLATE_WIDTH}x{TEMPLATE_HEIGHT}px template with transparent background.
                   </Text>
                 </View>
+              </View>
+            )}
+
+            {canvasBackgroundImage && (
+              <View style={styles.aiInfoRow}>
+                <Ionicons name="brush" size={16} color="#00BCD4" />
+                <Text style={styles.aiInfoText}>
+                  Drawing on AI design — use the brush tools to add details. Download when done.
+                </Text>
               </View>
             )}
 
@@ -773,6 +872,7 @@ export default function EditorScreen() {
         regions={regions}
         colorMap={colorMap}
         strokes={strokes}
+        backgroundImage={canvasBackgroundImage}
       />
 
       <Modal
@@ -1401,5 +1501,67 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
     color: "#fff",
+  },
+  scaleControlRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexWrap: "wrap",
+    marginTop: 10,
+  },
+  scaleLabel: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: Colors.light.textSecondary,
+    marginRight: 2,
+  },
+  scaleBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    backgroundColor: Colors.light.surfaceSecondary,
+  },
+  scaleBtnActive: {
+    borderColor: Colors.light.tint,
+    backgroundColor: Colors.light.tint + "20",
+  },
+  scaleBtnText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: Colors.light.textSecondary,
+  },
+  scaleBtnTextActive: {
+    color: Colors.light.tint,
+    fontFamily: "Inter_600SemiBold",
+  },
+  editWithDrawBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.light.tint,
+    backgroundColor: Colors.light.tint + "15",
+  },
+  editWithDrawText: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.tint,
+  },
+  rescalingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
   },
 });

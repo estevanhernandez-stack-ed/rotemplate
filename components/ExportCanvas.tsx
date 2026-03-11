@@ -1,6 +1,6 @@
 import React, { forwardRef } from "react";
 import { View, StyleSheet } from "react-native";
-import Svg, { Rect, Path, G, ClipPath, Defs } from "react-native-svg";
+import Svg, { Rect, Path, G, ClipPath, Defs, Image as SvgImage } from "react-native-svg";
 import {
   BodyRegion,
   TEMPLATE_WIDTH,
@@ -12,10 +12,11 @@ interface ExportCanvasProps {
   regions: BodyRegion[];
   colorMap: Record<string, string>;
   strokes: Stroke[];
+  backgroundImage?: string | null;
 }
 
 const ExportCanvas = forwardRef<View, ExportCanvasProps>(
-  ({ regions, colorMap, strokes }, ref) => {
+  ({ regions, colorMap, strokes, backgroundImage }, ref) => {
     const clipId = "export-clip";
 
     return (
@@ -46,20 +47,34 @@ const ExportCanvas = forwardRef<View, ExportCanvasProps>(
             height={TEMPLATE_HEIGHT}
             fill="transparent"
           />
-          {regions.map((region) => {
-            const fillColor = colorMap[region.id] || "transparent";
-            if (fillColor === "transparent") return null;
-            return (
-              <Rect
-                key={region.id}
-                x={region.x}
-                y={region.y}
-                width={region.width}
-                height={region.height}
-                fill={fillColor}
+
+          {backgroundImage ? (
+            <G clipPath={`url(#${clipId})`}>
+              <SvgImage
+                x={0}
+                y={0}
+                width={TEMPLATE_WIDTH}
+                height={TEMPLATE_HEIGHT}
+                href={`data:image/png;base64,${backgroundImage}`}
+                preserveAspectRatio="xMidYMid meet"
               />
-            );
-          })}
+            </G>
+          ) : (
+            regions.map((region) => {
+              const fillColor = colorMap[region.id] || "transparent";
+              if (fillColor === "transparent") return null;
+              return (
+                <Rect
+                  key={region.id}
+                  x={region.x}
+                  y={region.y}
+                  width={region.width}
+                  height={region.height}
+                  fill={fillColor}
+                />
+              );
+            })
+          )}
 
           <G clipPath={`url(#${clipId})`}>
             {strokes.map((stroke, i) => (

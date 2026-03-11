@@ -68,6 +68,10 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **AI scale adjustment**: After AI generation, size control buttons (60%–130%) let users rescale the design without re-generating. Server stores raw AI image (30-min TTL) and recomposites at the chosen scale via `/api/rescale-template`.
+- **Edit AI with Draw**: "Edit with Draw" button loads the AI-generated template as a canvas background so users can draw on top with the brush tool. ExportCanvas and TemplateCanvas both support a `backgroundImage` prop. Export correctly composites AI background + draw strokes.
+- **Prompt placement improvements**: Both shirt and pants prompts now use explicit percentage-based vertical zones and warn the AI that centering on the whole canvas places graphics on the arms/legs instead of the chest/waist.
+
 - **Dark mode UI overhaul**: Complete redesign with professional dark theme (#0E1117 background, #161B22 surfaces, #00BCD4 tint)
 - **Upload instructions**: Added "How to Upload to Roblox" guide accessible from both home screen and editor (modal with step-by-step instructions referencing Roblox Creator Hub workflow)
 - **R15 template coordinates fixed**: All region coordinates now match official Roblox R15 specifications

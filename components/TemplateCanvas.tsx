@@ -1,6 +1,6 @@
 import React, { useRef, useMemo } from "react";
 import { View, StyleSheet, Pressable, Dimensions, PanResponder } from "react-native";
-import Svg, { Rect, Path, G, ClipPath, Defs } from "react-native-svg";
+import Svg, { Rect, Path, G, ClipPath, Defs, Image as SvgImage } from "react-native-svg";
 import {
   BodyRegion,
   TEMPLATE_WIDTH,
@@ -26,6 +26,7 @@ interface TemplateCanvasProps {
   onStrokeStart: () => void;
   onStrokeMove: (x: number, y: number) => void;
   onStrokeEnd: () => void;
+  backgroundImage?: string | null;
 }
 
 export default function TemplateCanvas({
@@ -40,6 +41,7 @@ export default function TemplateCanvas({
   onStrokeStart,
   onStrokeMove,
   onStrokeEnd,
+  backgroundImage,
 }: TemplateCanvasProps) {
   const screenWidth = Dimensions.get("window").width;
   const canvasWidth = screenWidth - 32;
@@ -113,24 +115,37 @@ export default function TemplateCanvas({
           fill="transparent"
         />
 
-        {regions.map((region) => {
-          const isSelected = selectedRegion === region.id && mode === "fill";
-          const fillColor = colorMap[region.id] || "transparent";
-          return (
-            <Rect
-              key={region.id}
-              x={region.x}
-              y={region.y}
-              width={region.width}
-              height={region.height}
-              fill={fillColor === "transparent" ? "#1A2030" : fillColor}
-              stroke={isSelected ? "#00BCD4" : "#2A3140"}
-              strokeWidth={isSelected ? 3 : 1}
-              strokeDasharray={fillColor === "transparent" ? "4,2" : "0"}
-              opacity={fillColor === "transparent" ? 0.7 : 1}
+        {backgroundImage ? (
+          <G clipPath={`url(#${clipId})`}>
+            <SvgImage
+              x={0}
+              y={0}
+              width={TEMPLATE_WIDTH}
+              height={TEMPLATE_HEIGHT}
+              href={`data:image/png;base64,${backgroundImage}`}
+              preserveAspectRatio="xMidYMid meet"
             />
-          );
-        })}
+          </G>
+        ) : (
+          regions.map((region) => {
+            const isSelected = selectedRegion === region.id && mode === "fill";
+            const fillColor = colorMap[region.id] || "transparent";
+            return (
+              <Rect
+                key={region.id}
+                x={region.x}
+                y={region.y}
+                width={region.width}
+                height={region.height}
+                fill={fillColor === "transparent" ? "#1A2030" : fillColor}
+                stroke={isSelected ? "#00BCD4" : "#2A3140"}
+                strokeWidth={isSelected ? 3 : 1}
+                strokeDasharray={fillColor === "transparent" ? "4,2" : "0"}
+                opacity={fillColor === "transparent" ? 0.7 : 1}
+              />
+            );
+          })
+        )}
 
         <G clipPath={`url(#${clipId})`}>
           {strokes.map((stroke, i) => (
@@ -147,7 +162,7 @@ export default function TemplateCanvas({
         </G>
       </Svg>
 
-      {mode === "fill" &&
+      {mode === "fill" && !backgroundImage &&
         regions.map((region) => {
           const left = region.x * scale;
           const top = region.y * scale;
@@ -177,5 +192,6 @@ const styles = StyleSheet.create({
   },
   touchTarget: {
     position: "absolute",
+    backgroundColor: "transparent",
   },
 });
